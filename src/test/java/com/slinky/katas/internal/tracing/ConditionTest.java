@@ -13,11 +13,9 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for {@link Condition}.
- * <p>
- * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel}, {@code stripComment},
- * {@code Operator.eval}, {@code findOperator}, {@code parseCheck}, {@code evaluate} and {@code parseLine} are covered.
- * {@code Check.eval} is still to be tested directly.
+ * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel},
+ * {@code stripComment}, {@code Operator.eval}, {@code findOperator}, {@code parseCheck}, {@code evaluate} and
+ * {@code parseLine} are covered. {@code Check.eval} is still to be tested directly.
  *
  * @author Kheagen Haskins
  * @version 1.0.0
@@ -27,6 +25,15 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ConditionTest {
 
+    /**
+     * Checks the index that {@code findClosingBracket} returns for the bracket at {@code open}. The rows
+     * include nested brackets, brackets and escaped quotes inside a literal, and a bracket that the text never
+     * closes.
+     *
+     * @param text     one line of source code
+     * @param open     the index of an opening bracket in {@code text}
+     * @param expected the index of the matching closing bracket, or -1 where the text ends first
+     */
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
                                             `(a)`                        | 0 | 2
@@ -46,6 +53,12 @@ class ConditionTest {
         assertEquals(expected, actual);
     }
 
+    /**
+     * Checks that {@code isWrappedInBrackets} returns {@code true} when the first bracket closes at the last
+     * character.
+     *
+     * @param text text whose opening bracket closes at its final character
+     */
     @ParameterizedTest
     @ValueSource(strings = {"(a > b)", "((a > b))", "(a > (b + 1))", "(s.equals(\")\"))"})
     void testIsWrappedInBrackets_withValidArgs_ReturnsTrue(String text) {
@@ -54,6 +67,13 @@ class ConditionTest {
         assertTrue(actual);
     }
 
+    /**
+     * Checks that {@code isWrappedInBrackets} returns {@code false} for text that starts with anything but a
+     * bracket, for a first bracket that closes early, and for a first bracket that never closes.
+     *
+     * @param text text whose first character is something other than a bracket, or whose first bracket closes
+     *             before its final character
+     */
     @ParameterizedTest
     @ValueSource(strings = {"", "a > b", "(a) && (b)", "(a > b", "(a > b) ", " (a > b)"})
     void testIsWrappedInBrackets_withValidArgs_ReturnsFalse(String text) {
@@ -62,6 +82,14 @@ class ConditionTest {
         assertFalse(actual);
     }
 
+    /**
+     * Checks the parts that {@code splitTopLevel} returns. A separator inside brackets stays in its part, and
+     * each part keeps the spaces around it.
+     *
+     * @param text      the text to split
+     * @param separator the separator to split at, such as {@code &&} or {@code ;}
+     * @param expected  the parts from left to right
+     */
     @ParameterizedTest
     @MethodSource("provideSplitTopLevelCases")
     void testSplitTopLevel_withValidArgs_ReturnsExpectedValue(
@@ -82,6 +110,13 @@ class ConditionTest {
                          Arguments.of("", "&&", List.of("")));
     }
 
+    /**
+     * Checks the text that {@code stripComment} returns. A {@code //} inside a string literal stays in the line,
+     * as does one after a quote inside a char literal. The first {@code //} outside every literal ends the line.
+     *
+     * @param line     one line of source code
+     * @param expected the line up to its comment, or the whole line where it has none
+     */
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
             `int temp = big;`                  | `int temp = big;`
@@ -101,6 +136,16 @@ class ConditionTest {
         assertEquals(expected, actual);
     }
 
+    /**
+     * Checks the result of {@link Condition.Operator#eval(long, long)} for each operator, with a {@code true}
+     * row and a {@code false} row for every constant. The {@code IS_TRUE} rows also vary the right value, which
+     * that operator ignores.
+     *
+     * @param operator the operator to evaluate
+     * @param left     the value on the left of the operator
+     * @param right    the value on the right of the operator
+     * @param expected the result of the comparison
+     */
     @ParameterizedTest
     @CsvSource(delimiter = '|', textBlock = """
             EQUAL            |  6 | 6 | true
@@ -122,7 +167,9 @@ class ConditionTest {
             IS_TRUE          |  1 | 5 | true
             IS_TRUE          |  0 | 5 | false
             """)
-    void testEval_withValidArgs_ReturnsExpectedValue(Condition.Operator operator, long left, long right, boolean expected) {
+    void testEval_withValidArgs_ReturnsExpectedValue(
+            Condition.Operator operator, long left, long right, boolean expected
+    ) {
         var actual = operator.eval(left, right);
 
         assertEquals(expected, actual);
@@ -132,7 +179,7 @@ class ConditionTest {
      * Checks the {@link Condition.Operator} that {@code findOperator} returns for the body of one check.
      *
      * <h4 id="find-operator-limitations">Known limitations</h4>
-     * The rows below leave out two kinds of input, for which {@code findOperator} returns the wrong operator:
+     * {@code findOperator} returns the wrong operator for two kinds of input, which the rows below leave out:
      * <ol>
      *     <li>
      *       A shift operator before the comparison. In {@code a << 2 > b}, the method matches {@code <} at the
@@ -170,6 +217,15 @@ class ConditionTest {
         assertEquals(expected, actual);
     }
 
+    /**
+     * Checks the {@link Condition.Check} that {@code parseCheck} builds from the text of one check. Each leading
+     * {@code !} flips {@code isNegated}. The method removes the wrapping brackets before it looks for the
+     * operator.
+     *
+     * @param text      the text of one check
+     * @param operator  the operator the check should contain
+     * @param isNegated whether the check should be negated
+     */
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
             `i > 1`                  | GREATER   | false
@@ -184,7 +240,9 @@ class ConditionTest {
             `(!found)`               | IS_TRUE   | true
             `!isPrime(n)`            | IS_TRUE   | true
             """)
-    void testParseCheck_withValidArgs_ReturnsExpectedValue(String text, Condition.Operator operator, boolean isNegated) {
+    void testParseCheck_withValidArgs_ReturnsExpectedValue(
+            String text, Condition.Operator operator, boolean isNegated
+    ) {
         var expected = new Condition.Check(text, operator, isNegated);
 
         var actual = Condition.parseCheck(text);
@@ -192,9 +250,19 @@ class ConditionTest {
         assertEquals(expected, actual);
     }
 
+    /**
+     * Checks that {@code evaluate} returns {@code true} or {@code false} once the answers given decide the
+     * condition. Several rows leave out the checks that {@code &&} or {@code ||} stops before.
+     *
+     * @param text     the source text of the condition
+     * @param answers  the answers of the checks that have run, keyed by index
+     * @param expected the answer to the whole condition
+     */
     @ParameterizedTest
     @MethodSource("provideSettledEvaluateCases")
-    void testEvaluate_withValidArgs_ReturnsExpectedValue(String text, Map<Integer, Boolean> answers, Boolean expected) {
+    void testEvaluate_withValidArgs_ReturnsExpectedValue(
+            String text, Map<Integer, Boolean> answers, Boolean expected
+    ) {
         var condition = new Condition(text);
 
         var actual = condition.evaluate(answers);
@@ -202,7 +270,7 @@ class ConditionTest {
         assertEquals(expected, actual);
     }
 
-    // Each map holds the answers of the checks that have run so far, keyed by their index from left to right
+    // Each map contains the answers of the checks that have run so far, keyed by their index from left to right
     static Stream<Arguments> provideSettledEvaluateCases() {
         return Stream.of(Arguments.of("a",             Map.of(0, true), true),
                          Arguments.of("a",             Map.of(0, false), false),
@@ -220,6 +288,13 @@ class ConditionTest {
                          Arguments.of("(a || b) && c", Map.of(0, false, 1, false), false));
     }
 
+    /**
+     * Checks that {@code evaluate} returns {@code null} while the condition still depends on a check that has
+     * yet to run.
+     *
+     * @param text    the source text of the condition
+     * @param answers the answers of the checks that have run, keyed by index
+     */
     @ParameterizedTest
     @MethodSource("provideUnsettledEvaluateCases")
     void testEvaluate_withValidArgs_ReturnsNull(String text, Map<Integer, Boolean> answers) {
@@ -230,6 +305,14 @@ class ConditionTest {
         assertNull(actual);
     }
 
+    /**
+     * Checks the text of each condition that {@code parseLine} finds on one line. The rows cover every keyword,
+     * two statements on one line, a keyword inside a comment, both kinds of {@code for}, and a condition that
+     * continues on the next line.
+     *
+     * @param line     one line of source code
+     * @param expected the text of each condition on the line, from left to right
+     */
     @ParameterizedTest
     @MethodSource("provideParseLineCases")
     void testParseLine_withValidArgs_ReturnsExpectedValue(String line, List<String> expected) {

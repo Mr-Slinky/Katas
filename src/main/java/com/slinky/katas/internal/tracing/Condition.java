@@ -6,7 +6,64 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
+ * The condition of one {@code if}, {@code while} or {@code for} statement, split into the checks that Java runs
+ * to decide it. A check is one yes-or-no test, such as {@code x % i == 0}. The operators {@code &&}, {@code ||}
+ * and {@code !} join the checks into the whole condition.
  *
+ * <p>
+ * {@link #checks()} returns the checks from left to right, which is the order in which Java runs them.
+ * {@link #evaluate(Map)} identifies each check by its index in that list, counting from 0.
+ *
+ * <p>
+ * Java stops running checks once the answer is known. An {@code &&} stops at its first {@code false} check, and
+ * an {@code ||} stops at its first {@code true} check. {@link #evaluate(Map)} therefore accepts the answers of
+ * the checks that have run so far, and returns {@code null} while the condition still depends on a check that
+ * has yet to run.
+ *
+ * <p>
+ * A caller reads the conditions from one line of source code with {@link #parseLine(String)}, then passes the
+ * answers of the checks that have run to {@link #evaluate(Map)}:
+ *
+ * <pre>{@code
+ * var condition = Condition.parseLine("if (big % i == 0 && small % i == 0) return i;").getFirst();
+ *
+ * condition.text();                               // "big % i == 0 && small % i == 0"
+ * condition.checks().size();                      // 2
+ * condition.checks().get(1).text();               // "small % i == 0"
+ *
+ * condition.evaluate(Map.of());                   // null, check 0 has yet to run
+ * condition.evaluate(Map.of(0, false));           // false, the && stops at check 0
+ * condition.evaluate(Map.of(0, true));            // null, check 1 has yet to run
+ * condition.evaluate(Map.of(0, true, 1, true));   // true
+ * }</pre>
+ *
+ * <p>
+ * Brackets change how the checks group, and therefore which check Java runs next. The two conditions below
+ * contain the same three checks in the same order. Given the same answer for check 0, they reach different
+ * results:
+ *
+ * <pre>{@code
+ * var withoutBrackets = new Condition("a && b || c");     // Java groups this as (a && b) || c
+ * var withBrackets    = new Condition("a && (b || c)");
+ *
+ * withoutBrackets.evaluate(Map.of(0, false));   // null, the || moves on to c, which has yet to run
+ * withBrackets.evaluate(Map.of(0, false));      // false, the && stops at a and skips the whole bracket
+ * }</pre>
+ *
+ * <p>
+ * A {@code !} in front of a bracket flips the answer of the whole group inside it. A {@code !} in front of a
+ * single check stays part of that check:
+ *
+ * <pre>{@code
+ * var group = new Condition("!(a && b)");
+ * group.checks().size();                        // 2
+ * group.evaluate(Map.of(0, false));             // true, a && b is false and the ! flips it
+ * group.evaluate(Map.of(0, true, 1, true));     // false
+ *
+ * var single = new Condition("!(i > 1)");
+ * single.checks().size();                       // 1
+ * single.checks().getFirst().isNegated();       // true
+ * }</pre>
  *
  * @author Kheagen Haskins
  * @version 1.0.0
@@ -28,7 +85,27 @@ public class Condition {
     private static final Pattern KEYWORD = Pattern.compile("\\b(if|while|for)\\s*\\(");
 
     /**
-     * Finds every condition on one line of source code, from left to right.
+     * Returns the condition of each {@code if}, {@code while} and {@code for} statement on one line of source
+     * code, from left to right.
+     *
+     * <p>
+     * The method ignores everything after a {@code //} comment. A {@code for} statement contributes the part
+     * between its two semicolons, meaning an enhanced {@code for} and a {@code for (;;)} contribute no condition.
+     * The returned list leaves out a condition whose closing bracket falls on a later line.
+     *
+     * <pre>
+     * "if (a) b(); if (c) d();"             ->  ["a", "c"]
+     * "} while (n > 0);"                    ->  ["n > 0"]
+     * "for (int i = small; i > 1; i--) {"   ->  ["i > 1"]
+     * "for (String s : list) {"             ->  []
+     * "if (x > 0) { // if (y > 0)"          ->  ["x > 0"]
+     * "if (a > b ||"                        ->  []   (the condition continues on the next line)
+     * </pre>
+     *
+     * @param line one line of Java source code
+     *
+     * @return the conditions on that line in the order they appear, or an empty list where the line contains
+     *         none
      */
     static List<Condition> parseLine(String line) {
         var conditions = new ArrayList<Condition>();
@@ -38,11 +115,11 @@ public class Condition {
             var open  = matcher.end() - 1;   // the match ends just after the opening bracket
             var close = findClosingBracket(code, open);
 
-            if (close < 0) continue; // the condition continues on the next line, which this method leaves alone
+            if (close < 0) continue; // the condition continues on the next line, and the method skips it
 
             var inside = code.substring(open + 1, close);
             if (matcher.group(1).equals("for")) {
-                // for (start; condition; step) keeps its condition between the two semicolons
+                // A for statement places its condition between its two semicolons
                 var parts = splitTopLevel(inside, ";");
                 inside = parts.size() == 3 ? parts.get(1) : "";
             }
@@ -57,23 +134,41 @@ public class Condition {
     //                                           Nested                                           \\
     // ========================================================================================== \\
 
+    /**
+     * The comparison that one check makes between the value on its left and the value on its right.
+     */
     public enum Operator {
 
+        /** Compares with {@code ==}. */
         EQUAL,
+        /** Compares with {@code !=}. */
         NOT_EQUAL,
+        /** Compares with {@code <}. */
         LESS,
+        /** Compares with {@code <=}. */
         LESS_OR_EQUAL,
+        /** Compares with {@code >}. */
         GREATER,
+        /** Compares with {@code >=}. */
         GREATER_OR_EQUAL,
         /**
-         * A test with no comparison in it, which is {@code true} when the value on its left is anything but 0.
+         * The operator of a check with no comparison symbol, which is {@code true} when the value on its left is anything but 0.
          */
         IS_TRUE;
 
         /**
+         * Returns the result of comparing {@code left} with {@code right} using this operator.
+         *
+         * <pre>
+         * EQUAL.eval(6, 6)     ->  true
+         * LESS.eval(6, 6)      ->  false
+         * IS_TRUE.eval(0, 5)   ->  false   (the right value plays no part)
+         * </pre>
          *
          * @param left  the value on the left of the operator
          * @param right the value on the right of the operator (which {@link #IS_TRUE} ignores)
+         *
+         * @return {@code true} when the comparison is true for the two values
          */
         boolean eval(long left, long right) {
             return switch (this) {
@@ -90,9 +185,35 @@ public class Condition {
 
     /**
      * One yes-or-no check inside a condition, such as {@code x % i == 0}.
+     *
+     * <p>
+     * The checks parsed from four pieces of text:
+     *
+     * <pre>
+     * "i > 1"       ->  Check("i > 1", GREATER, false)
+     * "!(i > 1)"    ->  Check("!(i > 1)", GREATER, true)
+     * "!!(i > 1)"   ->  Check("!!(i > 1)", GREATER, false)
+     * "!found"      ->  Check("!found", IS_TRUE, true)
+     * </pre>
+     *
+     * @param text      the check as written in the condition, including any leading {@code !} and wrapping
+     *                  brackets
+     * @param operator  the comparison the check makes once its leading {@code !} and wrapping brackets are
+     *                  removed
+     * @param isNegated {@code true} when an odd number of {@code !} stand in front of the comparison, counted
+     *                  through any wrapping brackets. Each {@code !} flips the result of the comparison.
      */
     public record Check(String text, Operator operator, boolean isNegated) {
 
+        /**
+         * Returns the result of this check for the two values. The method compares them with
+         * {@link #operator()}, then flips the result when {@link #isNegated()} returns {@code true}.
+         *
+         * @param left  the value on the left of the operator
+         * @param right the value on the right of the operator (which {@link Operator#IS_TRUE} ignores)
+         *
+         * @return the result of the comparison, flipped when the check is negated
+         */
         boolean eval(long left, long right) {
             return operator.eval(left, right) != isNegated;
         }
@@ -103,14 +224,21 @@ public class Condition {
     //                                           Fields                                           \\
     // ========================================================================================== \\
     private final String      text;
-    private final List<Check> checks = new ArrayList<>();   // filled by parse, in the order Java runs the
-    // checks
+    // parse adds each check here, in the order Java runs them
+    private final List<Check> checks = new ArrayList<>();
+    // The tree that records how &&, || and ! join the checks, with a Leaf for each check
     private final Node        root;
 
     // ========================================================================================== \\
     //                                       Constructor(s)                                       \\
     // ========================================================================================== \\
     // Package-private, exposed for unit-test verification.
+    /**
+     * Builds a condition from its source text and splits that text into checks.
+     *
+     * @param text the condition as written between the brackets of its statement, such as
+     *             {@code a > b && !found}
+     */
     Condition(String text) {
         this.text = text;
         this.root = parse(text);
@@ -119,10 +247,20 @@ public class Condition {
     // ========================================================================================== \\
     //                                          Getters                                           \\
     // ========================================================================================== \\
+    /**
+     * Returns the source text of this condition, such as {@code big % i == 0 && small % i == 0}.
+     *
+     * @return the text this condition was built from
+     */
     String text() {
         return text;
     }
 
+    /**
+     * Returns the checks of this condition from left to right, which is the order in which Java runs them.
+     *
+     * @return the checks, where the index of each one is its key in the map that {@link #evaluate(Map)} accepts
+     */
     List<Check> checks() {
         return checks;
     }
@@ -131,7 +269,23 @@ public class Condition {
     //                                        API Methods                                         \\
     // ========================================================================================== \\
     /**
-     * Works out the answer to the whole condition from the checks that have run so far.
+     * Returns the answer to the whole condition, given the answers of the checks that have run so far.
+     *
+     * <p>
+     * The map uses the index of each check in {@link #checks()} as its key. A check absent from the map has yet
+     * to run. For the condition {@code a && b || c}, whose checks are {@code a}, {@code b} and {@code c}:
+     *
+     * <pre>
+     * {}                  ->  null    (check 0 has yet to run)
+     * {0=false}           ->  null    (the || moves on to check 2, which has yet to run)
+     * {0=false, 2=true}   ->  true
+     * {0=true, 1=true}    ->  true    (the || stops before check 2)
+     * </pre>
+     *
+     * @param answers the answer of each check that has run, keyed by its index in {@link #checks()}
+     *
+     * @return {@code true} or {@code false} once the checks that have run decide the condition, or {@code null}
+     *         while it still depends on a check that has yet to run
      */
     Boolean evaluate(Map<Integer, Boolean> answers) {
         return evaluate(root, answers);
@@ -140,9 +294,25 @@ public class Condition {
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
-    // Returns the index of the bracket that closes the one at 'open', or -1 if the text ends first.
-    // Brackets inside a string or char literal are skipped.
     // Package-private, exposed for unit-test verification.
+    /**
+     * Returns the index of the bracket that closes the opening bracket at {@code open}. The method counts nested
+     * brackets on the way. It skips any bracket inside a string or char literal, including a literal that
+     * contains an escaped quote.
+     *
+     * <pre>{@code
+     * findClosingBracket("if (a > b)", 3)             ->  9
+     * findClosingBracket("if (a > (b + 1))", 3)       ->  15
+     * findClosingBracket("if (a > (b + 1))", 8)       ->  14
+     * findClosingBracket("if (s.equals(\")\"))", 3)   ->  17   (the bracket inside the string literal is skipped)
+     * findClosingBracket("while (x < 5", 6)           ->  -1   (the text ends before the bracket closes)
+     * }</pre>
+     *
+     * @param text the text to search, such as one line of source code
+     * @param open the index of an opening bracket in {@code text}
+     *
+     * @return the index of the matching closing bracket, or -1 where the text ends first
+     */
     static int findClosingBracket(String text, int open) {
         var  depth = 0;
         char quote = 0;   // the quote that opened the literal the loop is inside, or 0 outside every literal
@@ -168,14 +338,46 @@ public class Condition {
         return -1;
     }
 
-    // Returns true when the bracket at the start of the text closes at its last character, as in "(a > b)".
     // Package-private, exposed for unit-test verification.
+    /**
+     * Returns whether one pair of brackets wraps the whole text, from its first character to its last.
+     *
+     * <pre>{@code
+     * "(a > b)"      ->  true
+     * "((a > b))"    ->  true
+     * "(a) && (b)"   ->  false   (the first bracket closes after "a")
+     * "(a > b) "     ->  false   (the text ends with a space)
+     * " (a > b)"     ->  false   (the text starts with a space)
+     * }</pre>
+     *
+     * @param text the text to test
+     *
+     * @return {@code true} when the text starts with a bracket that closes at its last character, and
+     *         {@code false} otherwise
+     */
     static boolean isWrappedInBrackets(String text) {
         return text.startsWith("(") && findClosingBracket(text, 0) == text.length() - 1;
     }
 
-    // Splits the text at each `separator` that appears outside every pair of brackets.
     // Package-private, exposed for unit-test verification.
+    /**
+     * Splits the text at each {@code separator} that appears outside every pair of brackets. A separator inside
+     * brackets stays in its part, and each part keeps the spaces around it.
+     *
+     * <pre>{@code
+     * splitTopLevel("a > b && c < d", "&&")        ->  ["a > b ", " c < d"]
+     * splitTopLevel("(a && b) || c", "||")         ->  ["(a && b) ", " c"]
+     * splitTopLevel("(a && b) || c", "&&")         ->  ["(a && b) || c"]
+     * splitTopLevel("int i = 0; i < n; i++", ";")  ->  ["int i = 0", " i < n", " i++"]
+     * splitTopLevel("a &&", "&&")                  ->  ["a ", ""]
+     * }</pre>
+     *
+     * @param text      the text to split
+     * @param separator the separator to split at, such as {@code &&}, {@code ||} or {@code ;}
+     *
+     * @return the parts from left to right, or a list containing the whole text where it has no separator
+     *         outside brackets
+     */
     static List<String> splitTopLevel(String text, String separator) {
         var parts = new ArrayList<String>();
         var depth = 0;   // the number of brackets open at index i
@@ -199,9 +401,23 @@ public class Condition {
         return parts;
     }
 
-    // Returns the line, up to the first "//" outside a string or char literal, or the whole line when it has
-    // no comment
     // Package-private, exposed for unit-test verification.
+    /**
+     * Returns the line up to its first {@code //} comment. A {@code //} inside a string literal belongs to the
+     * string, meaning the method keeps it in the line.
+     *
+     * <pre>{@code
+     * "int temp = big; // keep big"   ->  "int temp = big; "
+     * "String s = \"http://x\";"      ->  "String s = \"http://x\";"
+     * "int a = b / c;"                ->  "int a = b / c;"
+     * "// the whole line"             ->  ""
+     * }</pre>
+     *
+     * @param line one line of Java source code
+     *
+     * @return the text before the first {@code //} outside every literal, including any space before it, or the
+     *         whole line where it has no comment
+     */
     static String stripComment(String line) {
         char quote = 0;   // the quote that opened the literal the loop is inside, or 0 outside every literal
         for (var i = 0; i < line.length() - 1; i++) {   // stops one short, since "//" needs a second character
@@ -215,6 +431,27 @@ public class Condition {
         return line;
     }
 
+    // Known limitation: the search also matches a symbol inside a string or char literal, and the first "<" of a
+    // "<<" shift.
+    // Package-private, exposed for unit-test verification.
+    /**
+     * Returns the operator of the first comparison symbol in the body of one check. The method searches from
+     * left to right and skips anything inside brackets. A body with no comparison symbol outside brackets, such
+     * as {@code found} or {@code isPrime(a < b)}, gives {@link Operator#IS_TRUE}.
+     *
+     * <pre>{@code
+     * "i >= 1"           ->  GREATER_OR_EQUAL
+     * "big % i == 0"     ->  EQUAL
+     * "(a + b) > c"      ->  GREATER
+     * "isPrime(a < b)"   ->  IS_TRUE
+     * "found"            ->  IS_TRUE
+     * }</pre>
+     *
+     * @param body the body of one check, with any leading {@code !} and wrapping brackets removed
+     *
+     * @return the operator of the first comparison symbol outside every pair of brackets, or
+     *         {@link Operator#IS_TRUE} where the body has none
+     */
     static Operator findOperator(String body) {
         var depth = 0;   // the number of brackets open at index i
         for (var i = 0; i < body.length(); i++) {
@@ -233,10 +470,26 @@ public class Condition {
         return Operator.IS_TRUE;
     }
 
-    // Builds the Check for one check's text, removing each leading "!" and each pair of wrapping brackets
-    // first.
-    // Each "!" flips isNegated, meaning "!!(a > b)" cancels out.
-    // Package-private, exposed for unit-test verification.
+    /**
+     * Builds the {@link Check} for the text of one check. The method first removes each leading {@code !} and
+     * each pair of wrapping brackets, in whatever order they appear. It then finds the operator in the body
+     * that remains.
+     *
+     * <p>
+     * Each {@code !} removed flips {@link Check#isNegated()}, meaning two of them cancel out. The returned
+     * check keeps the original text.
+     *
+     * <pre>{@code
+     * "i > 1"         ->  Check("i > 1", GREATER, false)
+     * "!(!(x < y))"   ->  Check("!(!(x < y))", LESS, false)
+     * "(!found)"      ->  Check("(!found)", IS_TRUE, true)
+     * "x != y"        ->  Check("x != y", NOT_EQUAL, false)   (the "!" of "!=" belongs to the operator)
+     * }</pre>
+     *
+     * @param text the text of one check, such as {@code !(i > 1)}
+     *
+     * @return the check, with its operator and whether it is negated
+     */
     static Check parseCheck(String text) {
         var body      = text;
         var isNegated = false;
@@ -253,6 +506,32 @@ public class Condition {
         return new Check(text, findOperator(body), isNegated);
     }
 
+    /**
+     * Parses the text of a condition into a tree of nodes, adding each check it finds to {@link #checks} from
+     * left to right.
+     *
+     * <p>
+     * The method splits the text at each {@code ||} outside brackets before it splits at each {@code &&}. As a
+     * result, {@code a && b || c} becomes an {@code Or} whose first part is an {@code And}, matching the way
+     * Java groups it. The method then removes the brackets around a group of checks, and turns a {@code !} in
+     * front of such a group into a {@code Not}. Any other text becomes one {@code Leaf}, a bracketed single
+     * check included.
+     *
+     * <p>
+     * For a new condition, whose list of checks starts empty:
+     *
+     * <pre>{@code
+     * "a"               ->  Leaf(0)
+     * "a && b || c"     ->  Or[And[Leaf(0), Leaf(1)], Leaf(2)]
+     * "a && (b || c)"   ->  And[Leaf(0), Or[Leaf(1), Leaf(2)]]
+     * "!(a && b)"       ->  Not(And[Leaf(0), Leaf(1)])
+     * "!(i > 1)"        ->  Leaf(0)   (the "!" stays part of the single check)
+     * }</pre>
+     *
+     * @param expression the text of a whole condition, or of one part of it
+     *
+     * @return the root of the tree built from that text
+     */
     private Node parse(String expression) {
         var trimmed = expression.strip();
 
@@ -286,8 +565,30 @@ public class Condition {
         return new Leaf(checks.size() - 1);
     }
 
-    // Java runs the checks from left to right, so a part with no answer yet means the parts after it have
-    // yet to run
+    /**
+     * Returns the answer of one node in the tree, given the answers of the checks that have run so far.
+     *
+     * <p>
+     * Java runs the checks from left to right. As a result, every part after a part with no answer has yet to
+     * run as well. Each kind of node answers as follows:
+     *
+     * <ul>
+     *     <li>A {@code Leaf} returns the answer of its check from the map, or {@code null} where the map has
+     *     none.</li>
+     *     <li>A {@code Not} flips the answer of its inner node, and returns {@code null} while that node has
+     *     none.</li>
+     *     <li>An {@code And} returns the answer of its first part that is {@code false} or {@code null}, and
+     *     {@code true} when every part is {@code true}.</li>
+     *     <li>An {@code Or} returns the answer of its first part that is {@code true} or {@code null}, and
+     *     {@code false} when every part is {@code false}.</li>
+     * </ul>
+     *
+     * @param node    the node to evaluate
+     * @param answers the answer of each check that has run, keyed by its index in {@link #checks}
+     *
+     * @return {@code true} or {@code false} once the checks that have run decide the node, or {@code null}
+     *         while it still depends on a check that has yet to run
+     */
     private static Boolean evaluate(Node node, Map<Integer, Boolean> answers) {
         return switch (node) {
             case Leaf leaf -> answers.get(leaf.index());   // null for a check that has yet to run
@@ -321,16 +622,16 @@ public class Condition {
     // ========================================================================================== \\
 
     /**
-     * How the checks of a condition combine
+     * One node in the tree that records how the checks of a condition combine.
      */
     private sealed interface Node permits Leaf, Not, And, Or {}
 
     private record Leaf(int index) implements Node {}   // index is the check's position in the list of checks
 
-    private record Not(Node inner) implements Node {}
+    private record Not(Node inner) implements Node {}   // a "!" in front of a bracketed group of checks
 
-    private record And(List<Node> parts) implements Node {}
+    private record And(List<Node> parts) implements Node {}   // parts joined by "&&", from left to right
 
-    private record Or(List<Node> parts) implements Node {}
+    private record Or(List<Node> parts) implements Node {}   // parts joined by "||", from left to right
 
 }

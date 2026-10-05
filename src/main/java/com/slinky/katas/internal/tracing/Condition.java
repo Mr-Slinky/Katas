@@ -5,6 +5,8 @@ package com.slinky.katas.internal.tracing;
  *
  * @author Kheagen Haskins
  * @version 1.0.0
+ *         <p>
+ *         Last modified: 2026-10-05
  * @since 1.0.0
  */
 public class Condition {

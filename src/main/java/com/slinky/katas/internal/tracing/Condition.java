@@ -17,6 +17,10 @@ public class Condition {
     // ========================================================================================== \\
     //                                           Static                                           \\
     // ========================================================================================== \\
+    // The two-character symbols come first, so that "<=" is matched before "<"
+    private static final String[]   SYMBOLS   = {"==", "!=", "<=", ">=", "<", ">"};
+    private static final Operator[] OPERATORS = {Operator.EQUAL, Operator.NOT_EQUAL, Operator.LESS_OR_EQUAL,
+                                                 Operator.GREATER_OR_EQUAL, Operator.LESS, Operator.GREATER};
 
     // ========================================================================================== \\
     //                                           Nested                                           \\
@@ -38,8 +42,8 @@ public class Condition {
 
         /**
          *
-         * @param left  the value on the left of the comparison
-         * @param right the value on the right of the comparison, which {@link #IS_TRUE} ignores
+         * @param left  the value on the left of the operator
+         * @param right the value on the right of the operator (which {@link #IS_TRUE} ignores)
          * @return
          */
         boolean eval(long left, long right) {
@@ -151,6 +155,24 @@ public class Condition {
             else if (c == '/' && line.charAt(i + 1) == '/') return line.substring(0, i);
         }
         return line;
+    }
+
+    static Operator findOperator(String body) {
+        var depth = 0;   // the number of brackets open at index i
+        for (var i = 0; i < body.length(); i++) {
+            var c = body.charAt(i);
+            if (c == '(') {
+                depth++;
+            } else if (c == ')') {
+                depth--;
+            } else if (depth == 0) {
+                for (var op = 0; op < SYMBOLS.length; op++) {
+                    if (body.startsWith(SYMBOLS[op], i)) return OPERATORS[op];
+                }
+            }
+        }
+
+        return Operator.IS_TRUE;
     }
 
 }

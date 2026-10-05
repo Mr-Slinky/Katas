@@ -27,15 +27,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class ConditionTest {
 
     @ParameterizedTest
-    @CsvSource(delimiter = '|', textBlock = """
-                                            '(a)'                        | 0 | 2
-                                            'if (a > b) {'               | 3 | 9
-                                            'if (a > (b + 1)) {'         | 3 | 15
-                                            'if (a > (b + 1)) {'         | 8 | 14
-                                            'while (x < 5'               | 6 | -1
-                                            'if (s.equals("(")) {'       | 3 | 17
-                                            'if (s.equals(")")) {'       | 3 | 17
-                                            'if (s.equals("\\")")) {'    | 3 | 19
+    @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
+                                            `(a)`                        | 0 | 2
+                                            `if (a > b) {`               | 3 | 9
+                                            `if (a > (b + 1)) {`         | 3 | 15
+                                            `if (a > (b + 1)) {`         | 8 | 14
+                                            `while (x < 5`               | 6 | -1
+                                            `if (s.equals("(")) {`       | 3 | 17
+                                            `if (s.equals(")")) {`       | 3 | 17
+                                            `if (s.equals("\\")")) {`    | 3 | 19
+                                            `if (c == '"' && (x > 0)) {` | 3 | 23
+                                            `if (s.equals("\\\\")) {`    | 3 | 18
                                             """)
     void testFindClosingBracket_withValidArgs_ReturnsExpectedValue(String text, int open, int expected) {
         var actual = Condition.findClosingBracket(text, open);
@@ -80,15 +82,17 @@ class ConditionTest {
     }
 
     @ParameterizedTest
-    @CsvSource(delimiter = '|', textBlock = """
-            'int temp = big;'                  | 'int temp = big;'
-            'int temp = big; // keep big'      | 'int temp = big; '
-            '// the whole line'                | ''
-            'int a = b / c;'                   | 'int a = b / c;'
-            'String s = "http://x";'           | 'String s = "http://x";'
-            'String s = "a\\"//b";'            | 'String s = "a\\"//b";'
-            'String s = "x"; // note'          | 'String s = "x"; '
-            ''                                 | ''
+    @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
+            `int temp = big;`                  | `int temp = big;`
+            `int temp = big; // keep big`      | `int temp = big; `
+            `// the whole line`                | ``
+            `int a = b / c;`                   | `int a = b / c;`
+            `String s = "http://x";`           | `String s = "http://x";`
+            `String s = "a\\"//b";`            | `String s = "a\\"//b";`
+            `String s = "x"; // note`          | `String s = "x"; `
+            `if (c == '"') { // a quote`       | `if (c == '"') { `
+            `String s = "\\\\"; // note`       | `String s = "\\\\"; `
+            ``                                 | ``
             """)
     void testStripComment_withValidArgs_ReturnsExpectedValue(String line, String expected) {
         var actual = Condition.stripComment(line);

@@ -3,6 +3,7 @@ package com.slinky.katas.internal.tracing;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -23,11 +24,40 @@ public class Condition {
     private static final Operator[] OPERATORS = {Operator.EQUAL, Operator.NOT_EQUAL, Operator.LESS_OR_EQUAL,
                                                  Operator.GREATER_OR_EQUAL, Operator.LESS, Operator.GREATER};
 
+    // Matches "if", "while" or "for" as a whole word, followed by any spaces and an opening bracket
+    private static final Pattern KEYWORD = Pattern.compile("\\b(if|while|for)\\s*\\(");
+
+    /**
+     * Finds every condition on one line of source code, from left to right.
+     */
+    static List<Condition> parseLine(String line) {
+        var conditions = new ArrayList<Condition>();
+        var code       = stripComment(line);
+        var matcher    = KEYWORD.matcher(code);
+        while (matcher.find()) {
+            var open  = matcher.end() - 1;   // the match ends just after the opening bracket
+            var close = findClosingBracket(code, open);
+
+            if (close < 0) continue; // the condition continues on the next line, which this method leaves alone
+
+            var inside = code.substring(open + 1, close);
+            if (matcher.group(1).equals("for")) {
+                // for (start; condition; step) keeps its condition between the two semicolons
+                var parts = splitTopLevel(inside, ";");
+                inside = parts.size() == 3 ? parts.get(1) : "";
+            }
+            if (!inside.isBlank()) {
+                conditions.add(new Condition(inside.strip()));
+            }
+        }
+        return conditions;
+    }
+
     // ========================================================================================== \\
     //                                           Nested                                           \\
     // ========================================================================================== \\
 
-    enum Operator {
+    public enum Operator {
 
         EQUAL,
         NOT_EQUAL,
@@ -36,8 +66,7 @@ public class Condition {
         GREATER,
         GREATER_OR_EQUAL,
         /**
-         * A test with no comparison in it, which is {@code true} when the value on its left is anything but
-         *  0.
+         * A test with no comparison in it, which is {@code true} when the value on its left is anything but 0.
          */
         IS_TRUE;
 
@@ -45,17 +74,16 @@ public class Condition {
          *
          * @param left  the value on the left of the operator
          * @param right the value on the right of the operator (which {@link #IS_TRUE} ignores)
-         * @return
          */
         boolean eval(long left, long right) {
             return switch (this) {
-                case EQUAL            -> left == right;
-                case NOT_EQUAL        -> left != right;
-                case LESS             -> left < right;
-                case LESS_OR_EQUAL    -> left <= right;
-                case GREATER          -> left > right;
+                case EQUAL -> left == right;
+                case NOT_EQUAL -> left != right;
+                case LESS -> left < right;
+                case LESS_OR_EQUAL -> left <= right;
+                case GREATER -> left > right;
                 case GREATER_OR_EQUAL -> left >= right;
-                case IS_TRUE          -> left != 0;
+                case IS_TRUE -> left != 0;
             };
         }
     }
@@ -63,18 +91,20 @@ public class Condition {
     /**
      * One yes-or-no check inside a condition, such as {@code x % i == 0}.
      */
-    record Check(String text, Operator operator, boolean isNegated) {
+    public record Check(String text, Operator operator, boolean isNegated) {
 
         boolean eval(long left, long right) {
             return operator.eval(left, right) != isNegated;
         }
+
     }
 
     // ========================================================================================== \\
     //                                           Fields                                           \\
     // ========================================================================================== \\
     private final String      text;
-    private final List<Check> checks = new ArrayList<>();   // filled by parse, in the order Java runs the checks
+    private final List<Check> checks = new ArrayList<>();   // filled by parse, in the order Java runs the
+    // checks
     private final Node        root;
 
     // ========================================================================================== \\
@@ -203,7 +233,8 @@ public class Condition {
         return Operator.IS_TRUE;
     }
 
-    // Builds the Check for one check's text, removing each leading "!" and each pair of wrapping brackets first.
+    // Builds the Check for one check's text, removing each leading "!" and each pair of wrapping brackets
+    // first.
     // Each "!" flips isNegated, meaning "!!(a > b)" cancels out.
     // Package-private, exposed for unit-test verification.
     static Check parseCheck(String text) {
@@ -242,7 +273,8 @@ public class Condition {
             return parse(trimmed.substring(1, trimmed.length() - 1));
         }
         if (joinsChecks && trimmed.startsWith("!")) {
-            // Removes the "!" and the brackets around a group of checks, and returns a Not of the parsed text inside
+            // Removes the "!" and the brackets around a group of checks, and returns a Not of the parsed
+            // text inside
             var inner = trimmed.substring(1).strip();
             if (isWrappedInBrackets(inner)) {
                 return new Not(parse(inner.substring(1, inner.length() - 1)));
@@ -254,7 +286,8 @@ public class Condition {
         return new Leaf(checks.size() - 1);
     }
 
-    // Java runs the checks from left to right, so a part with no answer yet means the parts after it have yet to run
+    // Java runs the checks from left to right, so a part with no answer yet means the parts after it have
+    // yet to run
     private static Boolean evaluate(Node node, Map<Integer, Boolean> answers) {
         return switch (node) {
             case Leaf leaf -> answers.get(leaf.index());   // null for a check that has yet to run
@@ -286,6 +319,7 @@ public class Condition {
     // ========================================================================================== \\
     //                                       Helper Classes                                       \\
     // ========================================================================================== \\
+
     /**
      * How the checks of a condition combine
      */

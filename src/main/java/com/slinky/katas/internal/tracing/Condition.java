@@ -1,5 +1,8 @@
 package com.slinky.katas.internal.tracing;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  *
@@ -63,6 +66,31 @@ public class Condition {
     // Package-private, exposed for unit-test verification.
     static boolean isWrappedInBrackets(String text) {
         return text.startsWith("(") && findClosingBracket(text, 0) == text.length() - 1;
+    }
+
+    // Splits the text at each `separator` that appears outside every pair of brackets.
+    // Package-private, exposed for unit-test verification.
+    static List<String> splitTopLevel(String text, String separator) {
+        var parts = new ArrayList<String>();
+        var depth = 0;   // the number of brackets open at index i
+        var start = 0;   // the index at which the current part begins
+        for (var i = 0; i < text.length(); i++) {
+            var c = text.charAt(i);
+            boolean outsideBrackets = depth == 0;
+            if (c == '(') {
+                depth++;
+            } else if (c == ')') {
+                depth--;
+            } else if (outsideBrackets && text.startsWith(separator, i)) {
+                // The current part ends where the separator begins, and the next part begins after it
+                parts.add(text.substring(start, i));
+                start = i + separator.length();
+                i     = start - 1;   // the loop's i++ then moves i on to start, past the separator
+            }
+        }
+        // The text after the last split forms the final part, or the whole text when the loop made no split
+        parts.add(text.substring(start));
+        return parts;
     }
 
     // ========================================================================================== \\

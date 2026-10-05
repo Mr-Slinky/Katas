@@ -1,18 +1,21 @@
 package com.slinky.katas.internal.tracing;
 
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.List;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for {@link Condition}.
  * <p>
- * TDD progress: {@code findClosingBracket} and {@code isWrappedInBrackets} are covered. The remaining methods of {@code Condition} are still to be
- * written.
+ * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets} and {@code splitTopLevel} are covered.
+ * The remaining methods of {@code Condition} are still to be written.
  *
  * @author Kheagen Haskins
  * @version 1.0.0
@@ -24,15 +27,15 @@ class ConditionTest {
 
     @ParameterizedTest
     @CsvSource(delimiter = '|', textBlock = """
-            '(a)'                        | 0 | 2
-            'if (a > b) {'               | 3 | 9
-            'if (a > (b + 1)) {'         | 3 | 15
-            'if (a > (b + 1)) {'         | 8 | 14
-            'while (x < 5'               | 6 | -1
-            'if (s.equals("(")) {'       | 3 | 17
-            'if (s.equals(")")) {'       | 3 | 17
-            'if (s.equals("\\")")) {'    | 3 | 19
-            """)
+                                            '(a)'                        | 0 | 2
+                                            'if (a > b) {'               | 3 | 9
+                                            'if (a > (b + 1)) {'         | 3 | 15
+                                            'if (a > (b + 1)) {'         | 8 | 14
+                                            'while (x < 5'               | 6 | -1
+                                            'if (s.equals("(")) {'       | 3 | 17
+                                            'if (s.equals(")")) {'       | 3 | 17
+                                            'if (s.equals("\\")")) {'    | 3 | 19
+                                            """)
     void testFindClosingBracket_withValidArgs_ReturnsExpectedValue(String text, int open, int expected) {
         var actual = Condition.findClosingBracket(text, open);
 
@@ -53,6 +56,26 @@ class ConditionTest {
         var actual = Condition.isWrappedInBrackets(text);
 
         assertFalse(actual);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSplitTopLevelCases")
+    void testSplitTopLevel_withValidArgs_ReturnsExpectedValue(
+            String text, String separator, List<String> expected
+    ) {
+        var actual = Condition.splitTopLevel(text, separator);
+
+        assertEquals(expected, actual);
+    }
+
+    static Stream<Arguments> provideSplitTopLevelCases() {
+        return Stream.of(Arguments.of("a > b && c < d", "&&", List.of("a > b ", " c < d")),
+                         Arguments.of("(a && b) || c", "||", List.of("(a && b) ", " c")),
+                         Arguments.of("(a && b) || c", "&&", List.of("(a && b) || c")),
+                         Arguments.of("int i = 0; i < n; i++", ";", List.of("int i = 0", " i < n", " i++")),
+                         Arguments.of("a && b && c", "&&", List.of("a ", " b ", " c")),
+                         Arguments.of("a &&", "&&", List.of("a ", "")),
+                         Arguments.of("", "&&", List.of("")));
     }
 
 }

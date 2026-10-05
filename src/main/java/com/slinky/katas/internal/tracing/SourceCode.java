@@ -1,6 +1,8 @@
 package com.slinky.katas.internal.tracing;
 
 import java.io.IOException;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
@@ -46,9 +48,11 @@ final class SourceCode {
     //                                           Static                                           \\
     // ========================================================================================== \\
     // The deepest folder level the search enters, counting the folder the program runs from as level 0
-    private static final int         MAX_DEPTH = 12;
+    private static final int         MAX_DEPTH    = 12;
     // Build output folders, which contain compiled classes rather than source files
-    private static final Set<String> SKIPPED   = Set.of("target", "out", "build", "bin", "node_modules");
+    private static final Set<String> SKIPPED      = Set.of("target", "out", "build", "bin", "node_modules");
+    // The encoding that many Windows editors save in, used for a file that is not valid UTF-8
+    private static final Charset     WINDOWS_1252 = Charset.forName("windows-1252");
 
     /**
      * Searches for the {@code .java} file that a class was compiled from, and reads its lines.
@@ -57,7 +61,8 @@ final class SourceCode {
      * The search starts in the folder the program runs from and covers every folder inside it, down to 12
      * levels. It passes over each folder whose name starts with a dot, along with the build folders
      * {@code target}, {@code out}, {@code build}, {@code bin} and {@code node_modules}. A nested class maps to
-     * the file of its outermost class:
+     * the file of its outermost class. The method reads the file as UTF-8, or as Windows-1252 where the file
+     * contains a byte sequence that UTF-8 rejects.
      *
      * <pre>
      * com.slinky.katas.Gcd       ->  .../com/slinky/katas/Gcd.java
@@ -111,7 +116,7 @@ final class SourceCode {
             Files.walkFileTree(root, EnumSet.noneOf(FileVisitOption.class), MAX_DEPTH, visitor);
             // Reads every line of the file when the walk found it
             if (found[0] != null) {
-                return new SourceCode(fileName, Files.readAllLines(found[0]));
+                return new SourceCode(fileName, readLines(found[0]));
             }
         } catch (IOException ex) {
             // Falls through to the empty SourceCode below when a folder or file cannot be read
@@ -192,6 +197,29 @@ final class SourceCode {
      */
     List<Condition> conditionsOn(int number) {
         return Condition.parseLine(line(number));
+    }
+
+    // ========================================================================================== \\
+    //                                       Helper Methods                                       \\
+    // ========================================================================================== \\
+
+    /**
+     * Returns every line of a file, without line terminators. The method reads the file as UTF-8, and reads it
+     * again as Windows-1252 where it contains a byte sequence that UTF-8 rejects.
+     *
+     * @param file the file to read
+     *
+     * @return the lines of the file, from first to last
+     *
+     * @throws IOException if the file cannot be opened or read
+     */
+    private static List<String> readLines(Path file) throws IOException {
+        try {
+            return Files.readAllLines(file);
+        } catch (CharacterCodingException ex) {
+            // Decodes the bytes as Windows-1252, which replaces any undefined byte rather than throwing
+            return new String(Files.readAllBytes(file), WINDOWS_1252).lines().toList();
+        }
     }
 
 }

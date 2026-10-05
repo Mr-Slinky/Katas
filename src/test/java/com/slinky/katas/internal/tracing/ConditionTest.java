@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for {@link Condition}.
  * <p>
  * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel}, {@code stripComment},
- * {@code Operator.eval}, {@code findOperator} and {@code parseCheck} are covered.
+ * {@code Operator.eval}, {@code findOperator}, {@code parseCheck} and {@code evaluate} are covered.
  * The remaining methods of {@code Condition} are still to be written.
  *
  * @author Kheagen Haskins
@@ -189,6 +190,55 @@ class ConditionTest {
         var actual = Condition.parseCheck(text);
 
         assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSettledEvaluateCases")
+    void testEvaluate_withValidArgs_ReturnsExpectedValue(String text, Map<Integer, Boolean> answers, Boolean expected) {
+        var condition = new Condition(text);
+
+        var actual = condition.evaluate(answers);
+
+        assertEquals(expected, actual);
+    }
+
+    // Each map holds the answers of the checks that have run so far, keyed by their index from left to right
+    static Stream<Arguments> provideSettledEvaluateCases() {
+        return Stream.of(Arguments.of("a",             Map.of(0, true), true),
+                         Arguments.of("a",             Map.of(0, false), false),
+                         Arguments.of("a && b",        Map.of(0, false), false),
+                         Arguments.of("a && b",        Map.of(0, true, 1, true), true),
+                         Arguments.of("a && b",        Map.of(0, true, 1, false), false),
+                         Arguments.of("a || b",        Map.of(0, true), true),
+                         Arguments.of("a || b",        Map.of(0, false, 1, true), true),
+                         Arguments.of("a || b",        Map.of(0, false, 1, false), false),
+                         Arguments.of("!(a && b)",     Map.of(0, false), true),
+                         Arguments.of("!(a && b)",     Map.of(0, true, 1, true), false),
+                         Arguments.of("a && b || c",   Map.of(0, true, 1, true), true),
+                         Arguments.of("a && b || c",   Map.of(0, false, 2, true), true),
+                         Arguments.of("a && (b || c)", Map.of(0, true, 1, false, 2, true), true),
+                         Arguments.of("(a || b) && c", Map.of(0, false, 1, false), false));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideUnsettledEvaluateCases")
+    void testEvaluate_withValidArgs_ReturnsNull(String text, Map<Integer, Boolean> answers) {
+        var condition = new Condition(text);
+
+        var actual = condition.evaluate(answers);
+
+        assertNull(actual);
+    }
+
+    // Each map leaves out a check whose answer the condition still depends on
+    static Stream<Arguments> provideUnsettledEvaluateCases() {
+        return Stream.of(Arguments.of("a",             Map.of()),
+                         Arguments.of("a && b",        Map.of()),
+                         Arguments.of("a && b",        Map.of(0, true)),
+                         Arguments.of("a || b",        Map.of(0, false)),
+                         Arguments.of("!(a && b)",     Map.of(0, true)),
+                         Arguments.of("a && b || c",   Map.of(0, false)),
+                         Arguments.of("a && (b || c)", Map.of(0, true, 1, false)));
     }
 
 }

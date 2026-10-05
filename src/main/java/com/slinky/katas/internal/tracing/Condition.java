@@ -2,6 +2,7 @@ package com.slinky.katas.internal.tracing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -97,12 +98,14 @@ public class Condition {
     }
 
     // ========================================================================================== \\
-    //                                          Setters                                           \\
-    // ========================================================================================== \\
-
-    // ========================================================================================== \\
     //                                        API Methods                                         \\
     // ========================================================================================== \\
+    /**
+     * Works out the answer to the whole condition from the checks that have run so far.
+     */
+    Boolean evaluate(Map<Integer, Boolean> answers) {
+        return evaluate(root, answers);
+    }
 
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
@@ -249,6 +252,35 @@ public class Condition {
         // Adds the single check that remains to 'checks' and returns a Leaf with its index
         checks.add(parseCheck(trimmed));
         return new Leaf(checks.size() - 1);
+    }
+
+    // Java runs the checks from left to right, so a part with no answer yet means the parts after it have yet to run
+    private static Boolean evaluate(Node node, Map<Integer, Boolean> answers) {
+        return switch (node) {
+            case Leaf leaf -> answers.get(leaf.index());   // null for a check that has yet to run
+            case Not not -> {
+                var inner = evaluate(not.inner(), answers);
+                yield inner == null ? null : !inner;
+            }
+            case And and -> {
+                for (var part : and.parts()) {
+                    var answer = evaluate(part, answers);
+                    if (answer == null || !answer) {
+                        yield answer;
+                    }
+                }
+                yield true;
+            }
+            case Or or -> {
+                for (var part : or.parts()) {
+                    var answer = evaluate(part, answers);
+                    if (answer == null || answer) {
+                        yield answer;
+                    }
+                }
+                yield false;
+            }
+        };
     }
 
     // ========================================================================================== \\

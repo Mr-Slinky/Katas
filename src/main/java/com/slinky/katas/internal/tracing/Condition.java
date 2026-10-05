@@ -19,6 +19,43 @@ public class Condition {
     // ========================================================================================== \\
 
     // ========================================================================================== \\
+    //                                           Nested                                           \\
+    // ========================================================================================== \\
+
+    enum Operator {
+
+        EQUAL,
+        NOT_EQUAL,
+        LESS,
+        LESS_OR_EQUAL,
+        GREATER,
+        GREATER_OR_EQUAL,
+        /**
+         * A test with no comparison in it, which is {@code true} when the value on its left is anything but
+         *  0.
+         */
+        IS_TRUE;
+
+        /**
+         *
+         * @param left  the value on the left of the comparison
+         * @param right the value on the right of the comparison, which {@link #IS_TRUE} ignores
+         * @return
+         */
+        boolean eval(long left, long right) {
+            return switch (this) {
+                case EQUAL            -> left == right;
+                case NOT_EQUAL        -> left != right;
+                case LESS             -> left < right;
+                case LESS_OR_EQUAL    -> left <= right;
+                case GREATER          -> left > right;
+                case GREATER_OR_EQUAL -> left >= right;
+                case IS_TRUE          -> left != 0;
+            };
+        }
+    }
+
+    // ========================================================================================== \\
     //                                           Fields                                           \\
     // ========================================================================================== \\
 
@@ -100,7 +137,8 @@ public class Condition {
         return parts;
     }
 
-    // Returns the line, up to the first "//" outside a string or char literal, or the whole line when it has no comment
+    // Returns the line, up to the first "//" outside a string or char literal, or the whole line when it has
+    // no comment
     // Package-private, exposed for unit-test verification.
     static String stripComment(String line) {
         char quote = 0;   // the quote that opened the literal the loop is inside, or 0 outside every literal
@@ -115,7 +153,4 @@ public class Condition {
         return line;
     }
 
-    // ========================================================================================== \\
-    //                                       Helper Classes                                       \\
-    // ========================================================================================== \\
 }

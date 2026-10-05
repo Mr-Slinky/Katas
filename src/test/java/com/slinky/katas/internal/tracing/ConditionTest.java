@@ -16,8 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for {@link Condition}.
  * <p>
  * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel}, {@code stripComment},
- * {@code Operator.eval}, {@code findOperator}, {@code parseCheck} and {@code evaluate} are covered.
- * The remaining methods of {@code Condition} are still to be written.
+ * {@code Operator.eval}, {@code findOperator}, {@code parseCheck}, {@code evaluate} and {@code parseLine} are covered.
+ * {@code Check.eval} is still to be tested directly.
  *
  * @author Kheagen Haskins
  * @version 1.0.0
@@ -228,6 +228,37 @@ class ConditionTest {
         var actual = condition.evaluate(answers);
 
         assertNull(actual);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideParseLineCases")
+    void testParseLine_withValidArgs_ReturnsExpectedValue(String line, List<String> expected) {
+        var conditions = Condition.parseLine(line);
+
+        var actual = conditions.stream()
+                               .map(Condition::text)
+                               .toList();
+        assertEquals(expected, actual);
+    }
+
+    // Each case lists the text of every condition the line contains, from left to right
+    static Stream<Arguments> provideParseLineCases() {
+        return Stream.of(Arguments.of("if (big % i == 0 && small % i == 0) return i;", List.of("big % i == 0 && small % i == 0")),
+                         Arguments.of("while (big != 0) {", List.of("big != 0")),
+                         Arguments.of("} while (n > 0);", List.of("n > 0")),
+                         Arguments.of("} else if (x < y) {", List.of("x < y")),
+                         Arguments.of("if(x>0)", List.of("x>0")),
+                         Arguments.of("if (isPrime(n)) {", List.of("isPrime(n)")),
+                         Arguments.of("while (s.equals(\")\")) {", List.of("s.equals(\")\")")),
+                         Arguments.of("if (a) b(); if (c) d();", List.of("a", "c")),
+                         Arguments.of("if (x > 0) { // if (y > 0)", List.of("x > 0")),
+                         Arguments.of("for (int i = small; i > 1; i--) {", List.of("i > 1")),
+                         Arguments.of("for (;;) {", List.of()),
+                         Arguments.of("for (String s : list) {", List.of()),
+                         Arguments.of("if (a &&", List.of()),
+                         Arguments.of("notify(x);", List.of()),
+                         Arguments.of("int temp = big;", List.of()),
+                         Arguments.of("", List.of()));
     }
 
     // Each map leaves out a check whose answer the condition still depends on

@@ -1,6 +1,7 @@
 package com.slinky.katas.internal.tracing;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -90,9 +91,9 @@ public class Condition {
      *
      * <p>
      * The method ignores everything after a {@code //} comment, and every keyword inside a string literal. A
-     * {@code for} statement contributes the part between its two semicolons, meaning an enhanced {@code for} and
-     * a {@code for (;;)} contribute no condition. The returned list leaves out a condition whose closing bracket
-     * falls on a later line.
+     * {@code for} statement contributes the part between its two semicolons, meaning an enhanced {@code for}
+     * and a {@code for (;;)} contribute no condition. The returned list leaves out a condition whose closing
+     * bracket falls on a later line.
      *
      * <pre>
      * "if (a) b(); if (c) d();"             ->  ["a", "c"]
@@ -156,7 +157,8 @@ public class Condition {
         /** Compares with {@code >=}. */
         GREATER_OR_EQUAL,
         /**
-         * The operator of a check with no comparison symbol, which is {@code true} when the value on its left is anything but 0.
+         * The operator of a check with no comparison symbol, which is {@code true} when the value on its left
+         * is anything but 0.
          */
         IS_TRUE;
 
@@ -263,10 +265,11 @@ public class Condition {
     /**
      * Returns the checks of this condition from left to right, which is the order in which Java runs them.
      *
-     * @return the checks, where the index of each one is its key in the map that {@link #evaluate(Map)} accepts
+     * @return the checks in a list that throws {@link UnsupportedOperationException} on any change, where the
+     *         index of each one is its key in the map that {@link #evaluate(Map)} accepts
      */
     List<Check> checks() {
-        return checks;
+        return Collections.unmodifiableList(checks);
     }
 
     // ========================================================================================== \\
@@ -298,18 +301,17 @@ public class Condition {
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
-    // Package-private, exposed for unit-test verification.
     /**
-     * Returns the index of the bracket that closes the opening bracket at {@code open}. The method counts nested
-     * brackets on the way. It skips any bracket inside a string or char literal, including a literal that
-     * contains an escaped quote.
+     * Returns the index of the bracket that closes the opening bracket at {@code open}. The method counts
+     * nested brackets on the way. It skips any bracket inside a string or char literal, including a literal
+     * that contains an escaped quote.
      *
      * <pre>{@code
      * findClosingBracket("if (a > b)", 3)             ->  9
      * findClosingBracket("if (a > (b + 1))", 3)       ->  15
      * findClosingBracket("if (a > (b + 1))", 8)       ->  14
-     * findClosingBracket("if (s.equals(\")\"))", 3)   ->  17   (the bracket inside the string literal is skipped)
-     * findClosingBracket("while (x < 5", 6)           ->  -1   (the text ends before the bracket closes)
+     * findClosingBracket("if (s.equals(\")\"))", 3)   ->  17 (the bracket inside the string literal is skipped)
+     * findClosingBracket("while (x < 5", 6)           ->  -1 (the text ends before the bracket closes)
      * }</pre>
      *
      * @param text the text to search, such as one line of source code
@@ -363,10 +365,10 @@ public class Condition {
         return text.startsWith("(") && findClosingBracket(text, 0) == text.length() - 1;
     }
 
-    // Package-private, exposed for unit-test verification.
     /**
-     * Splits the text at each {@code separator} that appears outside every pair of brackets and every literal. A
-     * separator inside brackets or inside a literal stays in its part, and each part keeps the spaces around it.
+     * Splits the text at each {@code separator} that appears outside every pair of brackets and every literal.
+     * A separator inside brackets or inside a literal stays in its part, and each part keeps the spaces around
+     * it.
      *
      * <pre>{@code
      * splitTopLevel("a > b && c < d", "&&")        ->  ["a > b ", " c < d"]
@@ -407,7 +409,6 @@ public class Condition {
         return parts;
     }
 
-    // Package-private, exposed for unit-test verification.
     /**
      * Returns the line up to its first {@code //} comment. A {@code //} inside a string literal belongs to the
      * string, meaning the method keeps it in the line.
@@ -434,10 +435,10 @@ public class Condition {
             } else if (c == '"' || c == '\'') quote = c;
             else if (c == '/' && line.charAt(i + 1) == '/') return line.substring(0, i);
         }
+
         return line;
     }
 
-    // Package-private, exposed for unit-test verification.
     /**
      * Returns the text with every character inside a string or char literal replaced by a space. The quotes
      * themselves stay. The returned text has the same length as the original, meaning an index found in one
@@ -475,8 +476,6 @@ public class Condition {
         return masked.toString();
     }
 
-    // Known limitation: the search also matches the first "<" of a "<<" shift.
-    // Package-private, exposed for unit-test verification.
     /**
      * Returns the operator of the first comparison symbol in the body of one check. The method searches from
      * left to right and skips anything inside brackets or inside a literal. A body with no comparison symbol
@@ -497,7 +496,7 @@ public class Condition {
      *         {@link Operator#IS_TRUE} where the body has none
      */
     static Operator findOperator(String body) {
-        var scanned = maskLiterals(body);   // the loop reads brackets and symbols from here, outside every literal
+        var scanned = maskLiterals(body); // the loop reads brackets and symbols from here, outside every literal
         var depth   = 0;   // the number of brackets open at index i
         for (var i = 0; i < body.length(); i++) {
             var c = scanned.charAt(i);

@@ -59,6 +59,16 @@ public class Condition {
         }
     }
 
+    /**
+     * One yes-or-no check inside a condition, such as {@code x % i == 0}.
+     */
+    record Check(String text, Operator operator, boolean isNegated) {
+
+        boolean eval(long left, long right) {
+            return operator.eval(left, right) != isNegated;
+        }
+    }
+
     // ========================================================================================== \\
     //                                           Fields                                           \\
     // ========================================================================================== \\
@@ -173,6 +183,25 @@ public class Condition {
         }
 
         return Operator.IS_TRUE;
+    }
+
+    // Builds the Check for one check's text, removing each leading "!" and each pair of wrapping brackets first.
+    // Each "!" flips isNegated, meaning "!!(a > b)" cancels out.
+    // Package-private, exposed for unit-test verification.
+    static Check parseCheck(String text) {
+        var body      = text;
+        var isNegated = false;
+        while (true) {
+            if (body.startsWith("!") && !body.startsWith("!=")) {
+                isNegated = !isNegated;
+                body      = body.substring(1).strip();
+            } else if (isWrappedInBrackets(body)) {
+                body = body.substring(1, body.length() - 1).strip();
+            } else {
+                break;
+            }
+        }
+        return new Check(text, findOperator(body), isNegated);
     }
 
 }

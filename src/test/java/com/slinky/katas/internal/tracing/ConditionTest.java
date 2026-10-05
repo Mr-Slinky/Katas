@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for {@link Condition}.
  * <p>
- * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel} and {@code stripComment} are
- * covered.
+ * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel}, {@code stripComment}
+ * and {@code Operator.eval} are covered.
  * The remaining methods of {@code Condition} are still to be written.
  *
  * @author Kheagen Haskins
@@ -96,6 +96,33 @@ class ConditionTest {
             """)
     void testStripComment_withValidArgs_ReturnsExpectedValue(String line, String expected) {
         var actual = Condition.stripComment(line);
+
+        assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', textBlock = """
+            EQUAL            |  6 | 6 | true
+            EQUAL            |  6 | 7 | false
+            NOT_EQUAL        |  6 | 7 | true
+            NOT_EQUAL        |  6 | 6 | false
+            LESS             |  5 | 6 | true
+            LESS             |  6 | 6 | false
+            LESS             | -1 | 0 | true
+            LESS_OR_EQUAL    |  6 | 6 | true
+            LESS_OR_EQUAL    |  7 | 6 | false
+            GREATER          |  7 | 6 | true
+            GREATER          |  6 | 6 | false
+            GREATER_OR_EQUAL |  6 | 6 | true
+            GREATER_OR_EQUAL |  5 | 6 | false
+            IS_TRUE          |  1 | 0 | true
+            IS_TRUE          |  0 | 0 | false
+            IS_TRUE          | -1 | 0 | true
+            IS_TRUE          |  1 | 5 | true
+            IS_TRUE          |  0 | 5 | false
+            """)
+    void testEval_withValidArgs_ReturnsExpectedValue(Condition.Operator operator, long left, long right, boolean expected) {
+        var actual = operator.eval(left, right);
 
         assertEquals(expected, actual);
     }

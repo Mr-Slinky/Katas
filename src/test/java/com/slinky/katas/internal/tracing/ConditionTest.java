@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for {@link Condition}.
  * <p>
- * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel}, {@code stripComment}
- * and {@code Operator.eval} are covered.
+ * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel}, {@code stripComment},
+ * {@code Operator.eval} and {@code findOperator} are covered.
  * The remaining methods of {@code Condition} are still to be written.
  *
  * @author Kheagen Haskins
@@ -123,6 +123,45 @@ class ConditionTest {
             """)
     void testEval_withValidArgs_ReturnsExpectedValue(Condition.Operator operator, long left, long right, boolean expected) {
         var actual = operator.eval(left, right);
+
+        assertEquals(expected, actual);
+    }
+
+    /**
+     * Checks the {@link Condition.Operator} that {@code findOperator} returns for the body of one check.
+     *
+     * <h4 id="find-operator-limitations">Known limitations</h4>
+     * The rows below leave out two kinds of input, for which {@code findOperator} returns the wrong operator:
+     * <ol>
+     * <li>A shift operator before the comparison. In {@code a << 2 > b}, the method matches {@code <} at the first
+     * {@code <<} and returns {@code LESS}. The check compares with {@code >}, and the method should return
+     * {@code GREATER}.</li>
+     * <li>A comparison symbol inside a literal. In {@code '<' == c}, the method matches the {@code <} inside the char
+     * literal and returns {@code LESS}. The check compares with {@code ==}, and the method should return
+     * {@code EQUAL}. A symbol inside a string literal gives the same result.</li>
+     * </ol>
+     *
+     * @param body     the body of one check, with any leading {@code !} and wrapping brackets removed
+     * @param expected the operator the method should return
+     */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
+            `i > 1`                  | GREATER
+            `i>1`                    | GREATER
+            `i >= 1`                 | GREATER_OR_EQUAL
+            `i < n`                  | LESS
+            `i <= n`                 | LESS_OR_EQUAL
+            `big % i == 0`           | EQUAL
+            `x != y`                 | NOT_EQUAL
+            `s.equals(t) != false`   | NOT_EQUAL
+            `(a + b) > c`            | GREATER
+            `c == '<'`               | EQUAL
+            `found`                  | IS_TRUE
+            `isPrime(a < b)`         | IS_TRUE
+            ``                       | IS_TRUE
+            """)
+    void testFindOperator_withValidArgs_ReturnsExpectedValue(String body, Condition.Operator expected) {
+        var actual = Condition.findOperator(body);
 
         assertEquals(expected, actual);
     }

@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for {@link Condition}.
  * <p>
  * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel}, {@code stripComment},
- * {@code Operator.eval} and {@code findOperator} are covered.
+ * {@code Operator.eval}, {@code findOperator} and {@code parseCheck} are covered.
  * The remaining methods of {@code Condition} are still to be written.
  *
  * @author Kheagen Haskins
@@ -133,12 +133,16 @@ class ConditionTest {
      * <h4 id="find-operator-limitations">Known limitations</h4>
      * The rows below leave out two kinds of input, for which {@code findOperator} returns the wrong operator:
      * <ol>
-     * <li>A shift operator before the comparison. In {@code a << 2 > b}, the method matches {@code <} at the first
-     * {@code <<} and returns {@code LESS}. The check compares with {@code >}, and the method should return
-     * {@code GREATER}.</li>
-     * <li>A comparison symbol inside a literal. In {@code '<' == c}, the method matches the {@code <} inside the char
-     * literal and returns {@code LESS}. The check compares with {@code ==}, and the method should return
-     * {@code EQUAL}. A symbol inside a string literal gives the same result.</li>
+     *     <li>
+     *       A shift operator before the comparison. In {@code a << 2 > b}, the method matches {@code <} at the
+     *       first {@code <<} and returns {@code LESS}. The check compares with {@code >}, and the method
+     *       should return {@code GREATER}.
+     *     </li>
+     *     <li>
+     *       A comparison symbol inside a literal. In {@code '<' == c}, the method matches the {@code <} inside
+     *       the char literal and returns {@code LESS}. The check compares with {@code ==}, and the method
+     *       should return {@code EQUAL}. A symbol inside a string literal gives the same result.
+     *     </li>
      * </ol>
      *
      * @param body     the body of one check, with any leading {@code !} and wrapping brackets removed
@@ -146,7 +150,6 @@ class ConditionTest {
      */
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
-            `i > 1`                  | GREATER
             `i>1`                    | GREATER
             `i >= 1`                 | GREATER_OR_EQUAL
             `i < n`                  | LESS
@@ -162,6 +165,28 @@ class ConditionTest {
             """)
     void testFindOperator_withValidArgs_ReturnsExpectedValue(String body, Condition.Operator expected) {
         var actual = Condition.findOperator(body);
+
+        assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
+            `i > 1`                  | GREATER   | false
+            `!(i > 1)`               | GREATER   | true
+            `!!(i > 1)`              | GREATER   | false
+            `!(!(x < y))`            | LESS      | false
+            `! (a == b)`             | EQUAL     | true
+            `x != y`                 | NOT_EQUAL | false
+            `(a + b) > c`            | GREATER   | false
+            `((found))`              | IS_TRUE   | false
+            `!found`                 | IS_TRUE   | true
+            `(!found)`               | IS_TRUE   | true
+            `!isPrime(n)`            | IS_TRUE   | true
+            """)
+    void testParseCheck_withValidArgs_ReturnsExpectedValue(String text, Condition.Operator operator, boolean isNegated) {
+        var expected = new Condition.Check(text, operator, isNegated);
+
+        var actual = Condition.parseCheck(text);
 
         assertEquals(expected, actual);
     }

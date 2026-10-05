@@ -72,14 +72,29 @@ public class Condition {
     // ========================================================================================== \\
     //                                           Fields                                           \\
     // ========================================================================================== \\
+    private final String      text;
+    private final List<Check> checks = new ArrayList<>();   // filled by parse, in the order Java runs the checks
+    private final Node        root;
 
     // ========================================================================================== \\
     //                                       Constructor(s)                                       \\
     // ========================================================================================== \\
+    // Package-private, exposed for unit-test verification.
+    Condition(String text) {
+        this.text = text;
+        this.root = parse(text);
+    }
 
     // ========================================================================================== \\
     //                                          Getters                                           \\
     // ========================================================================================== \\
+    String text() {
+        return text;
+    }
+
+    List<Check> checks() {
+        return checks;
+    }
 
     // ========================================================================================== \\
     //                                          Setters                                           \\
@@ -203,5 +218,53 @@ public class Condition {
         }
         return new Check(text, findOperator(body), isNegated);
     }
+
+    private Node parse(String expression) {
+        var trimmed = expression.strip();
+
+        // Splits at each "||" outside brackets and returns an Or of the parsed parts
+        var alternatives = splitTopLevel(trimmed, "||");
+        if (alternatives.size() > 1) {
+            return new Or(alternatives.stream().map(this::parse).toList());
+        }
+        // Splits at each "&&" outside brackets and returns an And of the parsed parts
+        var requirements = splitTopLevel(trimmed, "&&");
+        if (requirements.size() > 1) {
+            return new And(requirements.stream().map(this::parse).toList());
+        }
+
+        var joinsChecks = trimmed.contains("&&") || trimmed.contains("||");
+        if (joinsChecks && isWrappedInBrackets(trimmed)) {
+            // Removes the brackets around a group of checks and parses the text inside of them
+            return parse(trimmed.substring(1, trimmed.length() - 1));
+        }
+        if (joinsChecks && trimmed.startsWith("!")) {
+            // Removes the "!" and the brackets around a group of checks, and returns a Not of the parsed text inside
+            var inner = trimmed.substring(1).strip();
+            if (isWrappedInBrackets(inner)) {
+                return new Not(parse(inner.substring(1, inner.length() - 1)));
+            }
+        }
+
+        // Adds the single check that remains to 'checks' and returns a Leaf with its index
+        checks.add(parseCheck(trimmed));
+        return new Leaf(checks.size() - 1);
+    }
+
+    // ========================================================================================== \\
+    //                                       Helper Classes                                       \\
+    // ========================================================================================== \\
+    /**
+     * How the checks of a condition combine
+     */
+    private sealed interface Node permits Leaf, Not, And, Or {}
+
+    private record Leaf(int index) implements Node {}   // index is the check's position in the list of checks
+
+    private record Not(Node inner) implements Node {}
+
+    private record And(List<Node> parts) implements Node {}
+
+    private record Or(List<Node> parts) implements Node {}
 
 }

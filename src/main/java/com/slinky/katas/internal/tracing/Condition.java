@@ -59,6 +59,12 @@ public class Condition {
         return -1;
     }
 
+    // Returns true when the bracket at the start of the text closes at its last character, as in "(a > b)".
+    // Package-private, exposed for unit-test verification.
+    static boolean isWrappedInBrackets(String text) {
+        return text.startsWith("(") && findClosingBracket(text, 0) == text.length() - 1;
+    }
+
     // ========================================================================================== \\
     //                                       Helper Classes                                       \\
     // ========================================================================================== \\

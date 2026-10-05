@@ -2,13 +2,16 @@ package com.slinky.katas.internal.tracing;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link Condition}.
  * <p>
- * TDD progress: {@code findClosingBracket} is covered. The remaining methods of {@code Condition} are still to be
+ * TDD progress: {@code findClosingBracket} and {@code isWrappedInBrackets} are covered. The remaining methods of {@code Condition} are still to be
  * written.
  *
  * @author Kheagen Haskins
@@ -34,6 +37,22 @@ class ConditionTest {
         var actual = Condition.findClosingBracket(text, open);
 
         assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"(a > b)", "((a > b))", "(a > (b + 1))", "(s.equals(\")\"))"})
+    void testIsWrappedInBrackets_withValidArgs_ReturnsTrue(String text) {
+        var actual = Condition.isWrappedInBrackets(text);
+
+        assertTrue(actual);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "a > b", "(a) && (b)", "(a > b", "(a > b) ", " (a > b)"})
+    void testIsWrappedInBrackets_withValidArgs_ReturnsFalse(String text) {
+        var actual = Condition.isWrappedInBrackets(text);
+
+        assertFalse(actual);
     }
 
 }

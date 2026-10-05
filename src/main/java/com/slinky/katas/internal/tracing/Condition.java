@@ -42,17 +42,24 @@ public class Condition {
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
     // Returns the index of the bracket that closes the one at 'open', or -1 if the text ends first.
+    // Brackets inside a string or char literal are skipped.
     // Package-private, exposed for unit-test verification.
     static int findClosingBracket(String text, int open) {
-        var depth    = 0;
-        var inString = false;
+        var  depth = 0;
+        char quote = 0;   // the quote that opened the literal the loop is inside, or 0 outside every literal
         for (var i = open; i < text.length(); i++) {
             var c = text.charAt(i);
-            if (c == '"' && (i == 0 || text.charAt(i - 1) != '\\')) {
-                inString = !inString;
-            } else if (!inString && c == '(') {
+            if (quote != 0) {
+                if (c == '\\') {
+                    i++;   // the character after a backslash belongs to the literal, a quote included
+                } else if (c == quote) {
+                    quote = 0;
+                }
+            } else if (c == '"' || c == '\'') {
+                quote = c;
+            } else if (c == '(') {
                 depth++;
-            } else if (!inString && c == ')') {
+            } else if (c == ')') {
                 depth--;
                 if (depth == 0) {
                     return i;
@@ -75,7 +82,7 @@ public class Condition {
         var depth = 0;   // the number of brackets open at index i
         var start = 0;   // the index at which the current part begins
         for (var i = 0; i < text.length(); i++) {
-            var c = text.charAt(i);
+            var     c               = text.charAt(i);
             boolean outsideBrackets = depth == 0;
             if (c == '(') {
                 depth++;
@@ -93,17 +100,17 @@ public class Condition {
         return parts;
     }
 
-    // Returns the line-up to the first "//" outside a string literal, or the whole line when it has no comment.
+    // Returns the line, up to the first "//" outside a string or char literal, or the whole line when it has no comment
     // Package-private, exposed for unit-test verification.
     static String stripComment(String line) {
-        var inString = false;
+        char quote = 0;   // the quote that opened the literal the loop is inside, or 0 outside every literal
         for (var i = 0; i < line.length() - 1; i++) {   // stops one short, since "//" needs a second character
             var c = line.charAt(i);
-            if (c == '"' && (i == 0 || line.charAt(i - 1) != '\\')) {
-                inString = !inString;
-            } else if (!inString && c == '/' && line.charAt(i + 1) == '/') {
-                return line.substring(0, i);
-            }
+            if (quote != 0) {
+                if (c == '\\') i++; // the character after a backslash belongs to the literal, a quote included
+                else if (c == quote) quote = 0;
+            } else if (c == '"' || c == '\'') quote = c;
+            else if (c == '/' && line.charAt(i + 1) == '/') return line.substring(0, i);
         }
         return line;
     }

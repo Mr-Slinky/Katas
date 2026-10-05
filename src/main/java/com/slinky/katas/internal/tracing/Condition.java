@@ -93,6 +93,21 @@ public class Condition {
         return parts;
     }
 
+    // Returns the line-up to the first "//" outside a string literal, or the whole line when it has no comment.
+    // Package-private, exposed for unit-test verification.
+    static String stripComment(String line) {
+        var inString = false;
+        for (var i = 0; i < line.length() - 1; i++) {   // stops one short, since "//" needs a second character
+            var c = line.charAt(i);
+            if (c == '"' && (i == 0 || line.charAt(i - 1) != '\\')) {
+                inString = !inString;
+            } else if (!inString && c == '/' && line.charAt(i + 1) == '/') {
+                return line.substring(0, i);
+            }
+        }
+        return line;
+    }
+
     // ========================================================================================== \\
     //                                       Helper Classes                                       \\
     // ========================================================================================== \\

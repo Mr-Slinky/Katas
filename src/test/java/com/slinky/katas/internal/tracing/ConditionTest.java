@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for {@link Condition}.
  * <p>
- * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets} and {@code splitTopLevel} are covered.
+ * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel} and {@code stripComment} are
+ * covered.
  * The remaining methods of {@code Condition} are still to be written.
  *
  * @author Kheagen Haskins
@@ -76,6 +77,23 @@ class ConditionTest {
                          Arguments.of("a && b && c", "&&", List.of("a ", " b ", " c")),
                          Arguments.of("a &&", "&&", List.of("a ", "")),
                          Arguments.of("", "&&", List.of("")));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', textBlock = """
+            'int temp = big;'                  | 'int temp = big;'
+            'int temp = big; // keep big'      | 'int temp = big; '
+            '// the whole line'                | ''
+            'int a = b / c;'                   | 'int a = b / c;'
+            'String s = "http://x";'           | 'String s = "http://x";'
+            'String s = "a\\"//b";'            | 'String s = "a\\"//b";'
+            'String s = "x"; // note'          | 'String s = "x"; '
+            ''                                 | ''
+            """)
+    void testStripComment_withValidArgs_ReturnsExpectedValue(String line, String expected) {
+        var actual = Condition.stripComment(line);
+
+        assertEquals(expected, actual);
     }
 
 }

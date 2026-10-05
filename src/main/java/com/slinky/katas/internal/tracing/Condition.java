@@ -89,9 +89,10 @@ public class Condition {
      * code, from left to right.
      *
      * <p>
-     * The method ignores everything after a {@code //} comment. A {@code for} statement contributes the part
-     * between its two semicolons, meaning an enhanced {@code for} and a {@code for (;;)} contribute no condition.
-     * The returned list leaves out a condition whose closing bracket falls on a later line.
+     * The method ignores everything after a {@code //} comment, and every keyword inside a string literal. A
+     * {@code for} statement contributes the part between its two semicolons, meaning an enhanced {@code for} and
+     * a {@code for (;;)} contribute no condition. The returned list leaves out a condition whose closing bracket
+     * falls on a later line.
      *
      * <pre>
      * "if (a) b(); if (c) d();"             ->  ["a", "c"]
@@ -99,6 +100,7 @@ public class Condition {
      * "for (int i = small; i > 1; i--) {"   ->  ["i > 1"]
      * "for (String s : list) {"             ->  []
      * "if (x > 0) { // if (y > 0)"          ->  ["x > 0"]
+     * "if (a) log(\"while (b)\");"          ->  ["a"]
      * "if (a > b ||"                        ->  []   (the condition continues on the next line)
      * </pre>
      *
@@ -110,10 +112,12 @@ public class Condition {
     static List<Condition> parseLine(String line) {
         var conditions = new ArrayList<Condition>();
         var code       = stripComment(line);
-        var matcher    = KEYWORD.matcher(code);
+        // Blanks out the inside of each literal, which hides any keyword or bracket written in a string
+        var scanned    = maskLiterals(code);
+        var matcher    = KEYWORD.matcher(scanned);
         while (matcher.find()) {
             var open  = matcher.end() - 1;   // the match ends just after the opening bracket
-            var close = findClosingBracket(code, open);
+            var close = findClosingBracket(scanned, open);
 
             if (close < 0) continue; // the condition continues on the next line, and the method skips it
 
@@ -361,13 +365,14 @@ public class Condition {
 
     // Package-private, exposed for unit-test verification.
     /**
-     * Splits the text at each {@code separator} that appears outside every pair of brackets. A separator inside
-     * brackets stays in its part, and each part keeps the spaces around it.
+     * Splits the text at each {@code separator} that appears outside every pair of brackets and every literal. A
+     * separator inside brackets or inside a literal stays in its part, and each part keeps the spaces around it.
      *
      * <pre>{@code
      * splitTopLevel("a > b && c < d", "&&")        ->  ["a > b ", " c < d"]
      * splitTopLevel("(a && b) || c", "||")         ->  ["(a && b) ", " c"]
      * splitTopLevel("(a && b) || c", "&&")         ->  ["(a && b) || c"]
+     * splitTopLevel("s == \"&&\" && t", "&&")      ->  ["s == \"&&\" ", " t"]
      * splitTopLevel("int i = 0; i < n; i++", ";")  ->  ["int i = 0", " i < n", " i++"]
      * splitTopLevel("a &&", "&&")                  ->  ["a ", ""]
      * }</pre>
@@ -379,17 +384,18 @@ public class Condition {
      *         outside brackets
      */
     static List<String> splitTopLevel(String text, String separator) {
-        var parts = new ArrayList<String>();
-        var depth = 0;   // the number of brackets open at index i
-        var start = 0;   // the index at which the current part begins
+        var parts   = new ArrayList<String>();
+        var scanned = maskLiterals(text);   // the loop reads brackets and separators from here, outside every literal
+        var depth   = 0;   // the number of brackets open at index i
+        var start   = 0;   // the index at which the current part begins
         for (var i = 0; i < text.length(); i++) {
-            var     c               = text.charAt(i);
+            var     c               = scanned.charAt(i);
             boolean outsideBrackets = depth == 0;
             if (c == '(') {
                 depth++;
             } else if (c == ')') {
                 depth--;
-            } else if (outsideBrackets && text.startsWith(separator, i)) {
+            } else if (outsideBrackets && scanned.startsWith(separator, i)) {
                 // The current part ends where the separator begins, and the next part begins after it
                 parts.add(text.substring(start, i));
                 start = i + separator.length();
@@ -431,18 +437,56 @@ public class Condition {
         return line;
     }
 
-    // Known limitation: the search also matches a symbol inside a string or char literal, and the first "<" of a
-    // "<<" shift.
+    // Package-private, exposed for unit-test verification.
+    /**
+     * Returns the text with every character inside a string or char literal replaced by a space. The quotes
+     * themselves stay. The returned text has the same length as the original, meaning an index found in one
+     * identifies the same position in the other.
+     *
+     * <pre>{@code
+     * "s.equals(\"a||b\")"   ->  "s.equals(\"    \")"
+     * "c == '('"             ->  "c == ' '"
+     * "s == \"\\\"\""        ->  "s == \"  \""   (the escaped quote is part of the literal)
+     * "a && b"               ->  "a && b"
+     * }</pre>
+     *
+     * @param text the text to scan, such as one line of source code
+     *
+     * @return the text with the inside of each literal replaced by spaces
+     */
+    static String maskLiterals(String text) {
+        var  masked = new StringBuilder(text);
+        char quote  = 0;   // the quote that opened the literal the loop is inside, or 0 outside every literal
+        for (var i = 0; i < text.length(); i++) {
+            var c = text.charAt(i);
+            if (quote == 0) {
+                if (c == '"' || c == '\'') {
+                    quote = c;
+                }
+            } else if (c == quote) {
+                quote = 0;
+            } else {
+                masked.setCharAt(i, ' ');
+                if (c == '\\' && i + 1 < text.length()) {
+                    masked.setCharAt(++i, ' ');   // the character after a backslash belongs to the literal
+                }
+            }
+        }
+        return masked.toString();
+    }
+
+    // Known limitation: the search also matches the first "<" of a "<<" shift.
     // Package-private, exposed for unit-test verification.
     /**
      * Returns the operator of the first comparison symbol in the body of one check. The method searches from
-     * left to right and skips anything inside brackets. A body with no comparison symbol outside brackets, such
-     * as {@code found} or {@code isPrime(a < b)}, gives {@link Operator#IS_TRUE}.
+     * left to right and skips anything inside brackets or inside a literal. A body with no comparison symbol
+     * outside them, such as {@code found} or {@code isPrime(a < b)}, gives {@link Operator#IS_TRUE}.
      *
      * <pre>{@code
      * "i >= 1"           ->  GREATER_OR_EQUAL
      * "big % i == 0"     ->  EQUAL
      * "(a + b) > c"      ->  GREATER
+     * "'<' == c"         ->  EQUAL
      * "isPrime(a < b)"   ->  IS_TRUE
      * "found"            ->  IS_TRUE
      * }</pre>
@@ -453,16 +497,17 @@ public class Condition {
      *         {@link Operator#IS_TRUE} where the body has none
      */
     static Operator findOperator(String body) {
-        var depth = 0;   // the number of brackets open at index i
+        var scanned = maskLiterals(body);   // the loop reads brackets and symbols from here, outside every literal
+        var depth   = 0;   // the number of brackets open at index i
         for (var i = 0; i < body.length(); i++) {
-            var c = body.charAt(i);
+            var c = scanned.charAt(i);
             if (c == '(') {
                 depth++;
             } else if (c == ')') {
                 depth--;
             } else if (depth == 0) {
                 for (var op = 0; op < SYMBOLS.length; op++) {
-                    if (body.startsWith(SYMBOLS[op], i)) return OPERATORS[op];
+                    if (scanned.startsWith(SYMBOLS[op], i)) return OPERATORS[op];
                 }
             }
         }
@@ -513,8 +558,8 @@ public class Condition {
      * <p>
      * The method splits the text at each {@code ||} outside brackets before it splits at each {@code &&}. As a
      * result, {@code a && b || c} becomes an {@code Or} whose first part is an {@code And}, matching the way
-     * Java groups it. The method then removes the brackets around a group of checks, and turns a {@code !} in
-     * front of such a group into a {@code Not}. Any other text becomes one {@code Leaf}, a bracketed single
+     * Java groups it. The method then removes the brackets around a group of checks, and turns each {@code !}
+     * in front of such a group into a {@code Not}. Any other text becomes one {@code Leaf}, a bracketed single
      * check included.
      *
      * <p>
@@ -525,6 +570,7 @@ public class Condition {
      * "a && b || c"     ->  Or[And[Leaf(0), Leaf(1)], Leaf(2)]
      * "a && (b || c)"   ->  And[Leaf(0), Or[Leaf(1), Leaf(2)]]
      * "!(a && b)"       ->  Not(And[Leaf(0), Leaf(1)])
+     * "!!(a && b)"      ->  Not(Not(And[Leaf(0), Leaf(1)]))
      * "!(i > 1)"        ->  Leaf(0)   (the "!" stays part of the single check)
      * }</pre>
      *
@@ -546,17 +592,18 @@ public class Condition {
             return new And(requirements.stream().map(this::parse).toList());
         }
 
-        var joinsChecks = trimmed.contains("&&") || trimmed.contains("||");
+        var scanned     = maskLiterals(trimmed);
+        var joinsChecks = scanned.contains("&&") || scanned.contains("||");
         if (joinsChecks && isWrappedInBrackets(trimmed)) {
             // Removes the brackets around a group of checks and parses the text inside of them
             return parse(trimmed.substring(1, trimmed.length() - 1));
         }
         if (joinsChecks && trimmed.startsWith("!")) {
-            // Removes the "!" and the brackets around a group of checks, and returns a Not of the parsed
-            // text inside
+            // Removes one "!" in front of a group of checks, or in front of a further "!", and returns a Not of
+            // the parsed text after it
             var inner = trimmed.substring(1).strip();
-            if (isWrappedInBrackets(inner)) {
-                return new Not(parse(inner.substring(1, inner.length() - 1)));
+            if (isWrappedInBrackets(inner) || inner.startsWith("!")) {
+                return new Not(parse(inner));
             }
         }
 

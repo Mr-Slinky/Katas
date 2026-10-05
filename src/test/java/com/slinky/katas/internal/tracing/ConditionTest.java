@@ -14,8 +14,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel},
- * {@code stripComment}, {@code Operator.eval}, {@code findOperator}, {@code parseCheck}, {@code evaluate} and
- * {@code parseLine} are covered. {@code Check.eval} is still to be tested directly.
+ * {@code stripComment}, {@code maskLiterals}, {@code Operator.eval}, {@code findOperator}, {@code parseCheck},
+ * {@code checks}, {@code evaluate} and {@code parseLine} are covered. {@code Check.eval} is still to be tested
+ * directly.
  *
  * @author Kheagen Haskins
  * @version 1.0.0
@@ -83,8 +84,9 @@ class ConditionTest {
     }
 
     /**
-     * Checks the parts that {@code splitTopLevel} returns. A separator inside brackets stays in its part, and
-     * each part keeps the spaces around it.
+     * Checks the parts that {@code splitTopLevel} returns. A separator inside brackets or inside a string
+     * literal stays in its part, and each part keeps the spaces around it. The rows also cover a bracket inside
+     * a char literal, which leaves the bracket depth unchanged.
      *
      * @param text      the text to split
      * @param separator the separator to split at, such as {@code &&} or {@code ;}
@@ -107,7 +109,11 @@ class ConditionTest {
                          Arguments.of("int i = 0; i < n; i++", ";", List.of("int i = 0", " i < n", " i++")),
                          Arguments.of("a && b && c", "&&", List.of("a ", " b ", " c")),
                          Arguments.of("a &&", "&&", List.of("a ", "")),
-                         Arguments.of("", "&&", List.of("")));
+                         Arguments.of("", "&&", List.of("")),
+                         Arguments.of("\"a||b\".equals(s) || t", "||", List.of("\"a||b\".equals(s) ", " t")),
+                         Arguments.of("s == \"&&\" && t", "&&", List.of("s == \"&&\" ", " t")),
+                         Arguments.of("c == '(' && d", "&&", List.of("c == '(' ", " d")),
+                         Arguments.of("c == ')' && d", "&&", List.of("c == ')' ", " d")));
     }
 
     /**
@@ -132,6 +138,32 @@ class ConditionTest {
             """)
     void testStripComment_withValidArgs_ReturnsExpectedValue(String line, String expected) {
         var actual = Condition.stripComment(line);
+
+        assertEquals(expected, actual);
+    }
+
+    /**
+     * Checks the text that {@code maskLiterals} returns. Every character inside a string or char literal becomes
+     * a space, an escaped quote and an escaped backslash included. The quotes stay, and a literal that the text
+     * never closes runs to the end of the text.
+     *
+     * @param text     one line of source code
+     * @param expected the text with the inside of each literal replaced by spaces
+     */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
+            `a && b`                 | `a && b`
+            `s.equals("a||b")`       | `s.equals("    ")`
+            `c == '('`               | `c == ' '`
+            `s == "\\""`             | `s == "  "`
+            `c == '\\''`             | `c == '  '`
+            `s == "\\\\"`            | `s == "  "`
+            `"a" + "b"`              | `" " + " "`
+            `"abc`                   | `"   `
+            ``                       | ``
+            """)
+    void testMaskLiterals_withValidArgs_ReturnsExpectedValue(String text, String expected) {
+        var actual = Condition.maskLiterals(text);
 
         assertEquals(expected, actual);
     }
@@ -176,22 +208,13 @@ class ConditionTest {
     }
 
     /**
-     * Checks the {@link Condition.Operator} that {@code findOperator} returns for the body of one check.
+     * Checks the {@link Condition.Operator} that {@code findOperator} returns for the body of one check. The
+     * rows include a comparison symbol inside a string or char literal, which the method passes over.
      *
-     * <h4 id="find-operator-limitations">Known limitations</h4>
-     * {@code findOperator} returns the wrong operator for two kinds of input, which the rows below leave out:
-     * <ol>
-     *     <li>
-     *       A shift operator before the comparison. In {@code a << 2 > b}, the method matches {@code <} at the
-     *       first {@code <<} and returns {@code LESS}. The check compares with {@code >}, and the method
-     *       should return {@code GREATER}.
-     *     </li>
-     *     <li>
-     *       A comparison symbol inside a literal. In {@code '<' == c}, the method matches the {@code <} inside
-     *       the char literal and returns {@code LESS}. The check compares with {@code ==}, and the method
-     *       should return {@code EQUAL}. A symbol inside a string literal gives the same result.
-     *     </li>
-     * </ol>
+     * <h4 id="find-operator-limitations">Known limitation</h4>
+     * {@code findOperator} returns the wrong operator for a shift operator before the comparison, which the rows
+     * below leave out. In {@code a << 2 > b}, the method matches {@code <} at the first {@code <<} and returns
+     * {@code LESS}. The check compares with {@code >}, and the method should return {@code GREATER}.
      *
      * @param body     the body of one check, with any leading {@code !} and wrapping brackets removed
      * @param expected the operator the method should return
@@ -207,6 +230,9 @@ class ConditionTest {
             `s.equals(t) != false`   | NOT_EQUAL
             `(a + b) > c`            | GREATER
             `c == '<'`               | EQUAL
+            `'<' == c`               | EQUAL
+            `'>' != c`               | NOT_EQUAL
+            `"<".equals(s)`          | IS_TRUE
             `found`                  | IS_TRUE
             `isPrime(a < b)`         | IS_TRUE
             ``                       | IS_TRUE
@@ -251,6 +277,34 @@ class ConditionTest {
     }
 
     /**
+     * Checks the number of checks that {@code checks} returns. A bracketed group keeps one check for each side
+     * of its {@code &&} or {@code ||}, however many {@code !} stand in front of it. A {@code !} in front of a
+     * single check stays part of that check, and an {@code &&} inside a string literal joins nothing.
+     *
+     * @param text     the source text of the condition
+     * @param expected the number of checks in the condition
+     */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
+            `a`                        | 1
+            `a && b || c`              | 3
+            `!(i > 1)`                 | 1
+            `!(a && b)`                | 2
+            `!!(a && b)`               | 2
+            `! !(a && b)`              | 2
+            `!!(a || b)`               | 2
+            `!!!(a && b)`              | 2
+            `"a && b".isEmpty() && c`  | 2
+            """)
+    void testChecks_withValidArgs_ReturnsExpectedValue(String text, int expected) {
+        var condition = new Condition(text);
+
+        var actual = condition.checks().size();
+
+        assertEquals(expected, actual);
+    }
+
+    /**
      * Checks that {@code evaluate} returns {@code true} or {@code false} once the answers given decide the
      * condition. Several rows leave out the checks that {@code &&} or {@code ||} stops before.
      *
@@ -282,6 +336,8 @@ class ConditionTest {
                          Arguments.of("a || b",        Map.of(0, false, 1, false), false),
                          Arguments.of("!(a && b)",     Map.of(0, false), true),
                          Arguments.of("!(a && b)",     Map.of(0, true, 1, true), false),
+                         Arguments.of("!!(a && b)",    Map.of(0, true, 1, true), true),
+                         Arguments.of("!!!(a && b)",   Map.of(0, false), true),
                          Arguments.of("a && b || c",   Map.of(0, true, 1, true), true),
                          Arguments.of("a && b || c",   Map.of(0, false, 2, true), true),
                          Arguments.of("a && (b || c)", Map.of(0, true, 1, false, 2, true), true),
@@ -305,10 +361,23 @@ class ConditionTest {
         assertNull(actual);
     }
 
+    // Each map leaves out a check whose answer the condition still depends on
+    static Stream<Arguments> provideUnsettledEvaluateCases() {
+        return Stream.of(Arguments.of("a",             Map.of()),
+                         Arguments.of("a && b",        Map.of()),
+                         Arguments.of("a && b",        Map.of(0, true)),
+                         Arguments.of("a || b",        Map.of(0, false)),
+                         Arguments.of("!(a && b)",     Map.of(0, true)),
+                         Arguments.of("!!(a && b)",    Map.of(0, true)),
+                         Arguments.of("!!(a || b)",    Map.of(0, false)),
+                         Arguments.of("a && b || c",   Map.of(0, false)),
+                         Arguments.of("a && (b || c)", Map.of(0, true, 1, false)));
+    }
+
     /**
      * Checks the text of each condition that {@code parseLine} finds on one line. The rows cover every keyword,
-     * two statements on one line, a keyword inside a comment, both kinds of {@code for}, and a condition that
-     * continues on the next line.
+     * two statements on one line, a keyword inside a comment or a string literal, both kinds of {@code for}, and
+     * a condition that continues on the next line.
      *
      * @param line     one line of source code
      * @param expected the text of each condition on the line, from left to right
@@ -335,6 +404,9 @@ class ConditionTest {
                          Arguments.of("while (s.equals(\")\")) {", List.of("s.equals(\")\")")),
                          Arguments.of("if (a) b(); if (c) d();", List.of("a", "c")),
                          Arguments.of("if (x > 0) { // if (y > 0)", List.of("x > 0")),
+                         Arguments.of("System.out.println(\"checking if (x > 0)\");", List.of()),
+                         Arguments.of("if (a) log(\"while (b)\");", List.of("a")),
+                         Arguments.of("String s = \"for (int i = 0; i < n; i++)\";", List.of()),
                          Arguments.of("for (int i = small; i > 1; i--) {", List.of("i > 1")),
                          Arguments.of("for (;;) {", List.of()),
                          Arguments.of("for (String s : list) {", List.of()),
@@ -342,17 +414,6 @@ class ConditionTest {
                          Arguments.of("notify(x);", List.of()),
                          Arguments.of("int temp = big;", List.of()),
                          Arguments.of("", List.of()));
-    }
-
-    // Each map leaves out a check whose answer the condition still depends on
-    static Stream<Arguments> provideUnsettledEvaluateCases() {
-        return Stream.of(Arguments.of("a",             Map.of()),
-                         Arguments.of("a && b",        Map.of()),
-                         Arguments.of("a && b",        Map.of(0, true)),
-                         Arguments.of("a || b",        Map.of(0, false)),
-                         Arguments.of("!(a && b)",     Map.of(0, true)),
-                         Arguments.of("a && b || c",   Map.of(0, false)),
-                         Arguments.of("a && (b || c)", Map.of(0, true, 1, false)));
     }
 
 }

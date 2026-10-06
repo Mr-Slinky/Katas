@@ -5,6 +5,8 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -84,8 +86,8 @@ final class SourceCode {
 
         // Gets the absolute path of the working directory, where the search starts
         var root = Path.of("").toAbsolutePath();
-        // Stores the path of the matching file once the walk finds it
-        var found = new Path[1];
+        // Stores the path of every matching file the walk finds
+        var matches = new ArrayList<Path>();
         try {
             var visitor = new SimpleFileVisitor<Path>() {
                 @Override
@@ -98,10 +100,9 @@ final class SourceCode {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    // Stores the first file whose path ends with the wanted path, then stops the walk
+                    // Stores each file whose path ends with the wanted path, and carries on walking
                     if (file.endsWith(wanted)) {
-                        found[0] = file;
-                        return FileVisitResult.TERMINATE;
+                        matches.add(file);
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -114,9 +115,13 @@ final class SourceCode {
             };
             // Walks every folder below the working directory, up to MAX_DEPTH levels deep
             Files.walkFileTree(root, EnumSet.noneOf(FileVisitOption.class), MAX_DEPTH, visitor);
+            // Picks the match nearest the working directory, and breaks a tie by comparing the paths as text
+            var nearest = matches.stream()
+                                 .min(Comparator.comparingInt(Path::getNameCount)
+                                                .thenComparing(Comparator.naturalOrder()));
             // Reads every line of the file when the walk found it
-            if (found[0] != null) {
-                return new SourceCode(fileName, readLines(found[0]));
+            if (nearest.isPresent()) {
+                return new SourceCode(fileName, readLines(nearest.get()));
             }
         } catch (IOException ex) {
             // Falls through to the empty SourceCode below when a folder or file cannot be read

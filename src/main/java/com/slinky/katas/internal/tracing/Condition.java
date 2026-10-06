@@ -1,7 +1,6 @@
 package com.slinky.katas.internal.tracing;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -231,7 +230,7 @@ public class Condition {
     // ========================================================================================== \\
     private final String      text;
     // parse adds each check here, in the order Java runs them
-    private final List<Check> checks = new ArrayList<>();
+    private final List<Check> checks;
     // The tree that records how &&, || and ! join the checks, with a Leaf for each check
     private final Node        root;
 
@@ -246,8 +245,10 @@ public class Condition {
      *             {@code a > b && !found}
      */
     Condition(String text) {
-        this.text = text;
-        this.root = parse(text);
+        var found   = new ArrayList<Check>();
+        this.text   = text;
+        this.root   = parse(text, found);
+        this.checks = List.copyOf(found);
     }
 
     // ========================================================================================== \\
@@ -269,7 +270,7 @@ public class Condition {
      *         index of each one is its key in the map that {@link #evaluate(Map)} accepts
      */
     List<Check> checks() {
-        return Collections.unmodifiableList(checks);
+        return checks;
     }
 
     // ========================================================================================== \\
@@ -577,32 +578,32 @@ public class Condition {
      *
      * @return the root of the tree built from that text
      */
-    private Node parse(String expression) {
+    private static Node parse(String expression, List<Check> checks) {
         var trimmed = expression.strip();
 
         // Splits at each "||" outside brackets and returns an Or of the parsed parts
         var alternatives = splitTopLevel(trimmed, "||");
         if (alternatives.size() > 1) {
-            return new Or(alternatives.stream().map(this::parse).toList());
+            return new Or(alternatives.stream().map(part -> parse(part, checks)).toList());
         }
         // Splits at each "&&" outside brackets and returns an And of the parsed parts
         var requirements = splitTopLevel(trimmed, "&&");
         if (requirements.size() > 1) {
-            return new And(requirements.stream().map(this::parse).toList());
+            return new And(requirements.stream().map(part -> parse(part, checks)).toList());
         }
 
         var scanned     = maskLiterals(trimmed);
         var joinsChecks = scanned.contains("&&") || scanned.contains("||");
         if (joinsChecks && isWrappedInBrackets(trimmed)) {
             // Removes the brackets around a group of checks and parses the text inside of them
-            return parse(trimmed.substring(1, trimmed.length() - 1));
+            return parse(trimmed.substring(1, trimmed.length() - 1), checks);
         }
         if (joinsChecks && trimmed.startsWith("!")) {
             // Removes one "!" in front of a group of checks, or in front of a further "!", and returns a Not of
             // the parsed text after it
             var inner = trimmed.substring(1).strip();
             if (isWrappedInBrackets(inner) || inner.startsWith("!")) {
-                return new Not(parse(inner));
+                return new Not(parse(inner, checks));
             }
         }
 

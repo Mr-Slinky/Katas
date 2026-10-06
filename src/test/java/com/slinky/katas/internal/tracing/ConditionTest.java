@@ -1,5 +1,6 @@
 package com.slinky.katas.internal.tracing;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -302,6 +303,18 @@ class ConditionTest {
         var actual = condition.checks().size();
 
         assertEquals(expected, actual);
+    }
+
+    /**
+     * Checks that the list {@code checks} returns rejects a change, which keeps the index of each check in step
+     * with the keys that {@code evaluate} accepts.
+     */
+    @Test
+    void testChecks_withValidArgs_ThrowsUnsupportedOperationException() {
+        var checks = new Condition("a && b").checks();
+        var extra  = Condition.parseCheck("c");
+
+        assertThrows(UnsupportedOperationException.class, () -> checks.add(extra));
     }
 
     /**

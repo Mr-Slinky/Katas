@@ -3,7 +3,11 @@ package com.slinky.katas.internal.tracing;
 import java.io.IOException;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.file.*;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -17,8 +21,8 @@ import java.util.Set;
  * <p>
  * A caller obtains a {@code SourceCode} from {@link #find(Class)}, which searches for the file and reads it.
  * Line numbers count from 1, matching the line numbers that Java records in a compiled class.
- * {@link #line(int)} returns the text of one line, and {@link #conditionsOn(int)} returns the conditions
- * written on it.
+ * {@link #readLine(int)} returns the text of one line, and {@link #findConditionsOn(int)} returns the
+ * conditions written on it.
  *
  * <p>
  * For a class {@code com.slinky.katas.Gcd} whose source file has {@code if (small == 0) return big;} on line
@@ -27,16 +31,16 @@ import java.util.Set;
  * <pre>{@code
  * var source = SourceCode.find(Gcd.class);
  *
- * source.hasLines();                           // true
- * source.fileName();                           // "Gcd.java"
- * source.line(12).strip();                     // "if (small == 0) return big;"
- * source.conditionsOn(12).getFirst().text();   // "small == 0"
+ * source.hasLines();                                  // true
+ * source.getFileName();                               // "Gcd.java"
+ * source.readLine(12).strip();                        // "if (small == 0) return big;"
+ * source.findConditionsOn(12).getFirst().getText();   // "small == 0"
  * }</pre>
  *
  * <p>
  * When {@code find} cannot locate or read the file, it returns a {@code SourceCode} with no lines. For that
- * {@code SourceCode}, {@link #hasLines()} returns {@code false}, {@link #lineCount()} returns 0, and
- * {@link #line(int)} returns an empty string for every number.
+ * {@code SourceCode}, {@link #hasLines()} returns {@code false}, {@link #getLineCount()} returns 0, and
+ * {@link #readLine(int)} returns an empty string for every number.
  *
  * @author Kheagen Haskins
  * @version 1.0.0
@@ -153,14 +157,14 @@ final class SourceCode {
     /**
      * @return the name of the source file, such as {@code "Gcd.java"}, whether or not the file was found
      */
-    String fileName() {
+    String getFileName() {
         return fileName;
     }
 
     /**
      * @return the number of lines in the file, or 0 when the file was not found
      */
-    int lineCount() {
+    int getLineCount() {
         return lines.size();
     }
 
@@ -188,9 +192,9 @@ final class SourceCode {
      *
      * @param number a line number, where the first line of the file is 1
      *
-     * @return the text of that line, or an empty string for a number below 1 or above {@link #lineCount()}
+     * @return the text of that line, or an empty string for a number below 1 or above {@link #getLineCount()}
      */
-    String line(int number) {
+    String readLine(int number) {
         return number >= 1 && number <= lines.size() ? lines.get(number - 1) : "";
     }
 
@@ -202,8 +206,8 @@ final class SourceCode {
      * @return the conditions on that line from left to right, or an empty list when the line contains none or
      *         the number is outside the file
      */
-    List<Condition> conditionsOn(int number) {
-        return Condition.parseLine(line(number));
+    List<Condition> findConditionsOn(int number) {
+        return Condition.parseLine(readLine(number));
     }
 
     // ========================================================================================== \\

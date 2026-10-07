@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * and {@code !} join the checks into the whole condition.
  *
  * <p>
- * {@link #checks()} returns the checks from left to right, which is the order in which Java runs them.
+ * {@link #getChecks()} returns the checks from left to right, which is the order in which Java runs them.
  * {@link #evaluate(Map)} identifies each check by its index in that list, counting from 0.
  *
  * <p>
@@ -27,9 +27,9 @@ import java.util.regex.Pattern;
  * <pre>{@code
  * var condition = Condition.parseLine("if (big % i == 0 && small % i == 0) return i;").getFirst();
  *
- * condition.text();                               // "big % i == 0 && small % i == 0"
- * condition.checks().size();                      // 2
- * condition.checks().get(1).text();               // "small % i == 0"
+ * condition.getText();                            // "big % i == 0 && small % i == 0"
+ * condition.getChecks().size();                   // 2
+ * condition.getChecks().get(1).text();            // "small % i == 0"
  *
  * condition.evaluate(Map.of());                   // UNDECIDED, check 0 has yet to run
  * condition.evaluate(Map.of(0, false));           // FALSE, the && stops at check 0
@@ -56,13 +56,13 @@ import java.util.regex.Pattern;
  *
  * <pre>{@code
  * var group = new Condition("!(a && b)");
- * group.checks().size();                        // 2
+ * group.getChecks().size();                     // 2
  * group.evaluate(Map.of(0, false));             // TRUE, a && b is false and the ! flips it
  * group.evaluate(Map.of(0, true, 1, true));     // FALSE
  *
  * var single = new Condition("!(i > 1)");
- * single.checks().size();                       // 1
- * single.checks().getFirst().isNegated();       // true
+ * single.getChecks().size();                    // 1
+ * single.getChecks().getFirst().isNegated();    // true
  * }</pre>
  *
  * @author Kheagen Haskins
@@ -71,7 +71,7 @@ import java.util.regex.Pattern;
  *         Last modified: 2026-10-07
  * @since 1.0.0
  */
-public class Condition {
+public final class Condition {
 
     // ========================================================================================== \\
     //                                           Static                                           \\
@@ -307,7 +307,7 @@ public class Condition {
      *
      * @return the text this condition was built from
      */
-    String text() {
+    String getText() {
         return text;
     }
 
@@ -317,7 +317,7 @@ public class Condition {
      * @return the checks in a list that throws {@link UnsupportedOperationException} on any change, where the
      *         index of each one is its key in the map that {@link #evaluate(Map)} accepts
      */
-    List<Check> checks() {
+    List<Check> getChecks() {
         return checks;
     }
 
@@ -328,7 +328,7 @@ public class Condition {
      * Returns the answer to the whole condition, given the answers of the checks that have run so far.
      *
      * <p>
-     * The map uses the index of each check in {@link #checks()} as its key. A check absent from the map has yet
+     * The map uses the index of each check in {@link #getChecks()} as its key. A check absent from the map has yet
      * to run. For the condition {@code a && b || c}, whose checks are {@code a}, {@code b} and {@code c}:
      *
      * <pre>
@@ -338,7 +338,7 @@ public class Condition {
      * {0=true, 1=true}    ->  TRUE        (the || stops before check 2)
      * </pre>
      *
-     * @param answers the answer of each check that has run, keyed by its index in {@link #checks()}
+     * @param answers the answer of each check that has run, keyed by its index in {@link #getChecks()}
      *
      * @return {@link Answer#TRUE} or {@link Answer#FALSE} once the checks that have run decide the condition,
      *         or {@link Answer#UNDECIDED} while it still depends on a check that has yet to run
@@ -438,8 +438,8 @@ public class Condition {
         var depth   = 0;   // the number of brackets open at index i
         var start   = 0;   // the index at which the current part begins
         for (var i = 0; i < text.length(); i++) {
-            var     c               = scanned.charAt(i);
-            boolean outsideBrackets = depth == 0;
+            var c               = scanned.charAt(i);
+            var outsideBrackets = depth == 0;
             if (c == '(') {
                 depth++;
             } else if (c == ')') {

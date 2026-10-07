@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel},
  * {@code stripComment}, {@code maskLiterals}, {@code Operator.eval}, {@code findOperator}, {@code parseCheck},
- * {@code checks}, {@code evaluate} and {@code parseLine} are covered. {@code Check.eval} is still to be tested
+ * {@code getChecks}, {@code evaluate} and {@code parseLine} are covered. {@code Check.eval} is still to be tested
  * directly.
  *
  * @author Kheagen Haskins
@@ -281,7 +281,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks the number of checks that {@code checks} returns. A bracketed group keeps one check for each side
+     * Checks the number of checks that {@code getChecks} returns. A bracketed group keeps one check for each side
      * of its {@code &&} or {@code ||}, however many {@code !} stand in front of it. A {@code !} in front of a
      * single check stays part of that check, and an {@code &&} inside a string literal joins nothing.
      *
@@ -300,21 +300,21 @@ class ConditionTest {
             `!!!(a && b)`              | 2
             `"a && b".isEmpty() && c`  | 2
             """)
-    void testChecks_withValidArgs_ReturnsExpectedValue(String text, int expected) {
+    void testGetChecks_withValidArgs_ReturnsExpectedValue(String text, int expected) {
         var condition = new Condition(text);
 
-        var actual = condition.checks().size();
+        var actual = condition.getChecks().size();
 
         assertEquals(expected, actual);
     }
 
     /**
-     * Checks that the list {@code checks} returns rejects a change, which keeps the index of each check in step
-     * with the keys that {@code evaluate} accepts.
+     * Checks that the list {@code getChecks} returns rejects a change, which keeps the index of each check in
+     * step with the keys that {@code evaluate} accepts.
      */
     @Test
-    void testChecks_withValidArgs_ThrowsUnsupportedOperationException() {
-        var checks = new Condition("a && b").checks();
+    void testGetChecks_withValidArgs_ThrowsUnsupportedOperationException() {
+        var checks = new Condition("a && b").getChecks();
         var extra  = Condition.parseCheck("c");
 
         assertThrows(UnsupportedOperationException.class, () -> checks.add(extra));
@@ -404,7 +404,7 @@ class ConditionTest {
         var conditions = Condition.parseLine(line);
 
         var actual = conditions.stream()
-                               .map(Condition::text)
+                               .map(Condition::getText)
                                .toList();
         assertEquals(expected, actual);
     }

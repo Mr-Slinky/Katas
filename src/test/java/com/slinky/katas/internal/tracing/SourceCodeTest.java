@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Claude Code
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-05
+ *         Last modified: 2026-10-07
  * @since 1.0.0
  */
 class SourceCodeTest {
@@ -69,9 +69,9 @@ class SourceCodeTest {
 
         var source = SourceCode.find(Objects.class);
 
-        assertAll(() -> assertTrue(source.isFound()),
-                  () -> assertEquals(3, source.lineCount()),
-                  () -> assertEquals("// café", source.line(2)));
+        assertAll(() -> assertTrue(source.hasLines()),
+                  () -> assertEquals(3, source.getLineCount()),
+                  () -> assertEquals("// café", source.readLine(2)));
     }
 
 }

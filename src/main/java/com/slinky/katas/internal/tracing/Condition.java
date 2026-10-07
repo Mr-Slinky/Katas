@@ -68,7 +68,7 @@ import java.util.regex.Pattern;
  * @author Kheagen Haskins
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-05
+ *         Last modified: 2026-10-06
  * @since 1.0.0
  */
 public class Condition {
@@ -229,7 +229,7 @@ public class Condition {
     //                                           Fields                                           \\
     // ========================================================================================== \\
     private final String      text;
-    // parse adds each check here, in the order Java runs them
+    // The checks in the order Java runs them, copied from the list that parse fills
     private final List<Check> checks;
     // The tree that records how &&, || and ! join the checks, with a Leaf for each check
     private final Node        root;
@@ -552,7 +552,7 @@ public class Condition {
     }
 
     /**
-     * Parses the text of a condition into a tree of nodes, adding each check it finds to {@link #checks} from
+     * Parses the text of a condition into a tree of nodes, adding each check it finds to {@code checks} from
      * left to right.
      *
      * <p>
@@ -563,7 +563,7 @@ public class Condition {
      * check included.
      *
      * <p>
-     * For a new condition, whose list of checks starts empty:
+     * For a {@code checks} list that starts empty:
      *
      * <pre>{@code
      * "a"               ->  Leaf(0)
@@ -575,6 +575,8 @@ public class Condition {
      * }</pre>
      *
      * @param expression the text of a whole condition, or of one part of it
+     * @param checks     the list that receives each check, where the index of a check is the index its
+     *                   {@code Leaf} stores
      *
      * @return the root of the tree built from that text
      */

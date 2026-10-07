@@ -17,8 +17,8 @@ import java.util.regex.Pattern;
  * <p>
  * Java stops running checks once the answer is known. An {@code &&} stops at its first {@code false} check, and
  * an {@code ||} stops at its first {@code true} check. {@link #evaluate(Map)} therefore accepts the answers of
- * the checks that have run so far, and returns {@code null} while the condition still depends on a check that
- * has yet to run.
+ * the checks that have run so far, and returns {@link Answer#UNDECIDED} while the condition still depends on a
+ * check that has yet to run.
  *
  * <p>
  * A caller reads the conditions from one line of source code with {@link #parseLine(String)}, then passes the
@@ -31,10 +31,10 @@ import java.util.regex.Pattern;
  * condition.checks().size();                      // 2
  * condition.checks().get(1).text();               // "small % i == 0"
  *
- * condition.evaluate(Map.of());                   // null, check 0 has yet to run
- * condition.evaluate(Map.of(0, false));           // false, the && stops at check 0
- * condition.evaluate(Map.of(0, true));            // null, check 1 has yet to run
- * condition.evaluate(Map.of(0, true, 1, true));   // true
+ * condition.evaluate(Map.of());                   // UNDECIDED, check 0 has yet to run
+ * condition.evaluate(Map.of(0, false));           // FALSE, the && stops at check 0
+ * condition.evaluate(Map.of(0, true));            // UNDECIDED, check 1 has yet to run
+ * condition.evaluate(Map.of(0, true, 1, true));   // TRUE
  * }</pre>
  *
  * <p>
@@ -46,8 +46,8 @@ import java.util.regex.Pattern;
  * var withoutBrackets = new Condition("a && b || c");     // Java groups this as (a && b) || c
  * var withBrackets    = new Condition("a && (b || c)");
  *
- * withoutBrackets.evaluate(Map.of(0, false));   // null, the || moves on to c, which has yet to run
- * withBrackets.evaluate(Map.of(0, false));      // false, the && stops at a and skips the whole bracket
+ * withoutBrackets.evaluate(Map.of(0, false));   // UNDECIDED, the || moves on to c, which has yet to run
+ * withBrackets.evaluate(Map.of(0, false));      // FALSE, the && stops at a and skips the whole bracket
  * }</pre>
  *
  * <p>
@@ -57,8 +57,8 @@ import java.util.regex.Pattern;
  * <pre>{@code
  * var group = new Condition("!(a && b)");
  * group.checks().size();                        // 2
- * group.evaluate(Map.of(0, false));             // true, a && b is false and the ! flips it
- * group.evaluate(Map.of(0, true, 1, true));     // false
+ * group.evaluate(Map.of(0, false));             // TRUE, a && b is false and the ! flips it
+ * group.evaluate(Map.of(0, true, 1, true));     // FALSE
  *
  * var single = new Condition("!(i > 1)");
  * single.checks().size();                       // 1
@@ -192,6 +192,51 @@ public class Condition {
     }
 
     /**
+     * The answer to a condition, or to one part of it, given the answers of the checks that have run so far.
+     * {@link #UNDECIDED} applies while the answer still depends on a check that has yet to run.
+     *
+     * <pre>
+     * Answer.of(true)              ->  TRUE
+     * Answer.FALSE.negate()        ->  TRUE
+     * Answer.UNDECIDED.negate()    ->  UNDECIDED
+     * </pre>
+     */
+    enum Answer {
+
+        /** The checks that have run make the condition true. */
+        TRUE,
+        /** The checks that have run make the condition false. */
+        FALSE,
+        /** The condition still depends on a check that has yet to run. */
+        UNDECIDED;
+
+        /**
+         * Returns the answer for a known {@code boolean} value.
+         *
+         * @param value the value of a check that has run
+         *
+         * @return {@link #TRUE} for {@code true}, and {@link #FALSE} for {@code false}
+         */
+        static Answer of(boolean value) {
+            return value ? TRUE : FALSE;
+        }
+
+        /**
+         * Returns the answer after a {@code !} flips this one.
+         *
+         * @return {@link #FALSE} for {@link #TRUE}, {@link #TRUE} for {@link #FALSE}, and {@link #UNDECIDED} for
+         *         {@link #UNDECIDED}
+         */
+        Answer negate() {
+            return switch (this) {
+                case TRUE -> FALSE;
+                case FALSE -> TRUE;
+                case UNDECIDED -> UNDECIDED;
+            };
+        }
+    }
+
+    /**
      * One yes-or-no check inside a condition, such as {@code x % i == 0}.
      *
      * <p>
@@ -287,18 +332,18 @@ public class Condition {
      * to run. For the condition {@code a && b || c}, whose checks are {@code a}, {@code b} and {@code c}:
      *
      * <pre>
-     * {}                  ->  null    (check 0 has yet to run)
-     * {0=false}           ->  null    (the || moves on to check 2, which has yet to run)
-     * {0=false, 2=true}   ->  true
-     * {0=true, 1=true}    ->  true    (the || stops before check 2)
+     * {}                  ->  UNDECIDED   (check 0 has yet to run)
+     * {0=false}           ->  UNDECIDED   (the || moves on to check 2, which has yet to run)
+     * {0=false, 2=true}   ->  TRUE
+     * {0=true, 1=true}    ->  TRUE        (the || stops before check 2)
      * </pre>
      *
      * @param answers the answer of each check that has run, keyed by its index in {@link #checks()}
      *
-     * @return {@code true} or {@code false} once the checks that have run decide the condition, or {@code null}
-     *         while it still depends on a check that has yet to run
+     * @return {@link Answer#TRUE} or {@link Answer#FALSE} once the checks that have run decide the condition, or
+     *         {@link Answer#UNDECIDED} while it still depends on a check that has yet to run
      */
-    Boolean evaluate(Map<Integer, Boolean> answers) {
+    Answer evaluate(Map<Integer, Boolean> answers) {
         return evaluate(root, answers);
     }
 
@@ -629,46 +674,45 @@ public class Condition {
      * run as well. Each kind of node answers as follows:
      *
      * <ul>
-     *     <li>A {@code Leaf} returns the answer of its check from the map, or {@code null} where the map has
-     *     none.</li>
-     *     <li>A {@code Not} flips the answer of its inner node, and returns {@code null} while that node has
-     *     none.</li>
-     *     <li>An {@code And} returns the answer of its first part that is {@code false} or {@code null}, and
-     *     {@code true} when every part is {@code true}.</li>
-     *     <li>An {@code Or} returns the answer of its first part that is {@code true} or {@code null}, and
-     *     {@code false} when every part is {@code false}.</li>
+     *     <li>A {@code Leaf} returns the answer of its check from the map, or {@code UNDECIDED} where the map
+     *     has none.</li>
+     *     <li>A {@code Not} returns the answer of its inner node, flipped by {@link Answer#negate()}.</li>
+     *     <li>An {@code And} returns the answer of its first part that is not {@code TRUE}, and {@code TRUE} when
+     *     every part is {@code TRUE}.</li>
+     *     <li>An {@code Or} returns the answer of its first part that is not {@code FALSE}, and {@code FALSE}
+     *     when every part is {@code FALSE}.</li>
      * </ul>
      *
      * @param node    the node to evaluate
      * @param answers the answer of each check that has run, keyed by its index in {@link #checks}
      *
-     * @return {@code true} or {@code false} once the checks that have run decide the node, or {@code null}
-     *         while it still depends on a check that has yet to run
+     * @return {@link Answer#TRUE} or {@link Answer#FALSE} once the checks that have run decide the node, or
+     *         {@link Answer#UNDECIDED} while it still depends on a check that has yet to run
      */
-    private static Boolean evaluate(Node node, Map<Integer, Boolean> answers) {
+    private static Answer evaluate(Node node, Map<Integer, Boolean> answers) {
         return switch (node) {
-            case Leaf leaf -> answers.get(leaf.index());   // null for a check that has yet to run
-            case Not not -> {
-                var inner = evaluate(not.inner(), answers);
-                yield inner == null ? null : !inner;
+            case Leaf leaf -> {
+                var answer = answers.get(leaf.index());   // null for a check that has yet to run
+                yield answer == null ? Answer.UNDECIDED : Answer.of(answer);
             }
+            case Not not -> evaluate(not.inner(), answers).negate();
             case And and -> {
                 for (var part : and.parts()) {
                     var answer = evaluate(part, answers);
-                    if (answer == null || !answer) {
+                    if (answer != Answer.TRUE) {
                         yield answer;
                     }
                 }
-                yield true;
+                yield Answer.TRUE;
             }
             case Or or -> {
                 for (var part : or.parts()) {
                     var answer = evaluate(part, answers);
-                    if (answer == null || answer) {
+                    if (answer != Answer.FALSE) {
                         yield answer;
                     }
                 }
-                yield false;
+                yield Answer.FALSE;
             }
         };
     }

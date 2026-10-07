@@ -41,7 +41,7 @@ import java.util.Set;
  * @author Kheagen Haskins
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-05
+ *         Last modified: 2026-10-06
  * @since 1.0.0
  */
 final class SourceCode {
@@ -63,7 +63,9 @@ final class SourceCode {
      * The search starts in the folder the program runs from and covers every folder inside it, down to 12
      * levels. It passes over each folder whose name starts with a dot, along with the build folders
      * {@code target}, {@code out}, {@code build}, {@code bin} and {@code node_modules}. A nested class maps to
-     * the file of its outermost class. The method reads the file as UTF-8, or as Windows-1252 where the file
+     * the file of its outermost class. Where several files match, the method reads the one with the fewest
+     * folders between it and the starting folder. Among matches at the same depth, it reads the one whose path
+     * comes first when the paths are sorted as text. The method reads the file as UTF-8, or as Windows-1252 where the file
      * contains a byte sequence that UTF-8 rejects.
      *
      * <pre>

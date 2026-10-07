@@ -27,7 +27,7 @@ import java.util.Set;
  * <pre>{@code
  * var source = SourceCode.find(Gcd.class);
  *
- * source.isFound();                            // true
+ * source.hasLines();                           // true
  * source.fileName();                           // "Gcd.java"
  * source.line(12).strip();                     // "if (small == 0) return big;"
  * source.conditionsOn(12).getFirst().text();   // "small == 0"
@@ -35,13 +35,13 @@ import java.util.Set;
  *
  * <p>
  * When {@code find} cannot locate or read the file, it returns a {@code SourceCode} with no lines. For that
- * {@code SourceCode}, {@link #isFound()} returns {@code false}, {@link #lineCount()} returns 0, and
+ * {@code SourceCode}, {@link #hasLines()} returns {@code false}, {@link #lineCount()} returns 0, and
  * {@link #line(int)} returns an empty string for every number.
  *
  * @author Kheagen Haskins
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-06
+ *         Last modified: 2026-10-07
  * @since 1.0.0
  */
 final class SourceCode {
@@ -169,7 +169,7 @@ final class SourceCode {
     // ========================================================================================== \\
 
     /**
-     * Reports whether {@link #find(Class)} located and read the source file.
+     * Reports whether this {@code SourceCode} contains any lines to read.
      *
      * <pre>
      * file found and read, one or more lines  ->  true
@@ -179,7 +179,7 @@ final class SourceCode {
      *
      * @return {@code true} when the file contains at least one line
      */
-    boolean isFound() {
+    boolean hasLines() {
         return !lines.isEmpty();
     }
 

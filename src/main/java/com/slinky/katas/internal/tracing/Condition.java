@@ -68,7 +68,7 @@ import java.util.regex.Pattern;
  * @author Kheagen Haskins
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-06
+ *         Last modified: 2026-10-07
  * @since 1.0.0
  */
 public class Condition {
@@ -76,11 +76,6 @@ public class Condition {
     // ========================================================================================== \\
     //                                           Static                                           \\
     // ========================================================================================== \\
-    // The two-character symbols come first, so that "<=" is matched before "<"
-    private static final String[]   SYMBOLS   = {"==", "!=", "<=", ">=", "<", ">"};
-    private static final Operator[] OPERATORS = {Operator.EQUAL, Operator.NOT_EQUAL, Operator.LESS_OR_EQUAL,
-                                                 Operator.GREATER_OR_EQUAL, Operator.LESS, Operator.GREATER};
-
     // Matches "if", "while" or "for" as a whole word, followed by any spaces and an opening bracket
     private static final Pattern KEYWORD = Pattern.compile("\\b(if|while|for)\\s*\\(");
 
@@ -143,23 +138,31 @@ public class Condition {
      */
     public enum Operator {
 
+        // The two-character symbols come first, so that findOperator matches "<=" before "<"
         /** Compares with {@code ==}. */
-        EQUAL,
+        EQUAL("=="),
         /** Compares with {@code !=}. */
-        NOT_EQUAL,
-        /** Compares with {@code <}. */
-        LESS,
+        NOT_EQUAL("!="),
         /** Compares with {@code <=}. */
-        LESS_OR_EQUAL,
-        /** Compares with {@code >}. */
-        GREATER,
+        LESS_OR_EQUAL("<="),
         /** Compares with {@code >=}. */
-        GREATER_OR_EQUAL,
+        GREATER_OR_EQUAL(">="),
+        /** Compares with {@code <}. */
+        LESS("<"),
+        /** Compares with {@code >}. */
+        GREATER(">"),
         /**
          * The operator of a check with no comparison symbol, which is {@code true} when the value on its left
          * is anything but 0.
          */
-        IS_TRUE;
+        IS_TRUE("");
+
+        // The symbol as written in Java source code, or an empty string for IS_TRUE
+        private final String symbol;
+
+        Operator(String symbol) {
+            this.symbol = symbol;
+        }
 
         /**
          * Returns the result of comparing {@code left} with {@code right} using this operator.
@@ -506,8 +509,12 @@ public class Condition {
             } else if (c == ')') {
                 depth--;
             } else if (depth == 0) {
-                for (var op = 0; op < SYMBOLS.length; op++) {
-                    if (scanned.startsWith(SYMBOLS[op], i)) return OPERATORS[op];
+                // Returns the first operator whose symbol starts at i, skipping IS_TRUE, whose empty symbol
+                // matches everywhere
+                for (var op : Operator.values()) {
+                    if (op != Operator.IS_TRUE && scanned.startsWith(op.symbol, i)) {
+                        return op;
+                    }
                 }
             }
         }

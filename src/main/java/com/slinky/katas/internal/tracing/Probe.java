@@ -33,6 +33,58 @@ public final class Probe {
         return List.copyOf(EVENTS);
     }
 
+    static int register(Checked checked) {
+        CHECKS.add(Objects.requireNonNull(checked));
+        return CHECKS.size() - 1;
+    }
+
+    static Checked getChecked(int id) {
+        return CHECKS.get(id);
+    }
+
+    public static void enter(String method) {
+        add(new Enter(method));
+    }
+
+    public static void param(String name, String value) {
+        add(new Param(name, value));
+    }
+
+    public static void set(String name, String value) {
+        add(new Set(name, value));
+    }
+
+    public static void line(int line) {
+        add(new Line(line));
+    }
+
+    public static void loop() {
+        loops++;
+        if (loops > MAX_LOOPS) {
+            throw new Runaway(String.format("Still looping after %d passes", MAX_LOOPS));
+        }
+    }
+
+    public static void exit(String value) {
+        add(new Exit(value));
+    }
+
+    public static void check(int left, int right, int id) {
+        add(new Result(id, getChecked(id).getCheck().eval(left, right)));
+    }
+
+    public static void check(int value, int id) {
+        check(value, 0, id);
+    }
+
+    public static void checkSame(Object left, Object right, int id) {
+        check(left == right ? 0 : 1, 0, id);
+    }
+
+    public static void checkNull(Object value, int id) {
+        check(value == null ? 0 : 1, 0, id);
+    }
+
     // ========================================================================================== \\
     //                                           Nested                                           \\
     // ========================================================================================== \\
@@ -77,6 +129,8 @@ public final class Probe {
     // ========================================================================================== \\
     //                                       Constructor(s)                                       \\
     // ========================================================================================== \\
+    private Probe() {
+    }
 
     // ========================================================================================== \\
     //                                          Getters                                           \\

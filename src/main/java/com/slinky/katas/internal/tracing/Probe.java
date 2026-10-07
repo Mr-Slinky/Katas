@@ -1,5 +1,7 @@
 package com.slinky.katas.internal.tracing;
 
+import java.util.Objects;
+
 /**
  * Receives a call from the reporting copy of a class after each step, and records each call as an event
  *
@@ -28,6 +30,17 @@ public class Probe {
     record Result(int id, boolean value)    implements Event {}
     record Line(int line)                   implements Event {}
     record Exit(String value)               implements Event {}
+
+    record Checked(String method, int line, Condition condition, int index) {
+
+        Checked {
+            Objects.checkIndex(index, condition.getChecks().size()); // Fail fast!
+        }
+
+        Condition.Check getCheck() {
+            return condition.getChecks().get(index);
+        }
+    }
 
     // ========================================================================================== \\
     //                                           Fields                                           \\

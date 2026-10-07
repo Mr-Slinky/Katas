@@ -180,13 +180,13 @@ public class Condition {
          */
         boolean eval(long left, long right) {
             return switch (this) {
-                case EQUAL -> left == right;
-                case NOT_EQUAL -> left != right;
-                case LESS -> left < right;
-                case LESS_OR_EQUAL -> left <= right;
-                case GREATER -> left > right;
+                case EQUAL            -> left == right;
+                case NOT_EQUAL        -> left != right;
+                case LESS             -> left < right;
+                case LESS_OR_EQUAL    -> left <= right;
+                case GREATER          -> left > right;
                 case GREATER_OR_EQUAL -> left >= right;
-                case IS_TRUE -> left != 0;
+                case IS_TRUE          -> left != 0;
             };
         }
     }
@@ -224,13 +224,13 @@ public class Condition {
         /**
          * Returns the answer after a {@code !} flips this one.
          *
-         * @return {@link #FALSE} for {@link #TRUE}, {@link #TRUE} for {@link #FALSE}, and {@link #UNDECIDED} for
-         *         {@link #UNDECIDED}
+         * @return {@link #FALSE} for {@link #TRUE}, {@link #TRUE} for {@link #FALSE}, and {@link #UNDECIDED}
+         *         for {@link #UNDECIDED}
          */
         Answer negate() {
             return switch (this) {
-                case TRUE -> FALSE;
-                case FALSE -> TRUE;
+                case TRUE      -> FALSE;
+                case FALSE     -> TRUE;
                 case UNDECIDED -> UNDECIDED;
             };
         }
@@ -340,8 +340,8 @@ public class Condition {
      *
      * @param answers the answer of each check that has run, keyed by its index in {@link #checks()}
      *
-     * @return {@link Answer#TRUE} or {@link Answer#FALSE} once the checks that have run decide the condition, or
-     *         {@link Answer#UNDECIDED} while it still depends on a check that has yet to run
+     * @return {@link Answer#TRUE} or {@link Answer#FALSE} once the checks that have run decide the condition,
+     *         or {@link Answer#UNDECIDED} while it still depends on a check that has yet to run
      */
     Answer evaluate(Map<Integer, Boolean> answers) {
         return evaluate(root, answers);
@@ -385,9 +385,7 @@ public class Condition {
                 depth++;
             } else if (c == ')') {
                 depth--;
-                if (depth == 0) {
-                    return i;
-                }
+                if (depth == 0) return i;
             }
         }
         return -1;
@@ -479,10 +477,18 @@ public class Condition {
         for (var i = 0; i < line.length() - 1; i++) {   // stops one short, since "//" needs a second character
             var c = line.charAt(i);
             if (quote != 0) {
-                if (c == '\\') i++; // the character after a backslash belongs to the literal, a quote included
-                else if (c == quote) quote = 0;
-            } else if (c == '"' || c == '\'') quote = c;
-            else if (c == '/' && line.charAt(i + 1) == '/') return line.substring(0, i);
+                if (c == '\\') {
+                    i++; // the character after a backslash belongs to the literal, a quote included
+                }
+                else if (c == quote){
+                    quote = 0;
+                }
+            } else if (c == '"' || c == '\''){
+                quote = c;
+            }
+            else if (c == '/' && line.charAt(i + 1) == '/') {
+                return line.substring(0, i);
+            }
         }
 
         return line;

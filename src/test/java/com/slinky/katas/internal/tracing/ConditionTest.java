@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.slinky.katas.internal.tracing.Condition.Answer.FALSE;
+import static com.slinky.katas.internal.tracing.Condition.Answer.TRUE;
+import static com.slinky.katas.internal.tracing.Condition.Answer.UNDECIDED;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -22,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Kheagen Haskins
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-05
+ *         Last modified: 2026-10-07
  * @since 1.0.0
  */
 class ConditionTest {
@@ -318,7 +321,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks that {@code evaluate} returns {@code true} or {@code false} once the answers given decide the
+     * Checks that {@code evaluate} returns {@code TRUE} or {@code FALSE} once the answers given decide the
      * condition. Several rows leave out the checks that {@code &&} or {@code ||} stops before.
      *
      * @param text     the source text of the condition
@@ -328,7 +331,7 @@ class ConditionTest {
     @ParameterizedTest
     @MethodSource("provideSettledEvaluateCases")
     void testEvaluate_withValidArgs_ReturnsExpectedValue(
-            String text, Map<Integer, Boolean> answers, Boolean expected
+            String text, Map<Integer, Boolean> answers, Condition.Answer expected
     ) {
         var condition = new Condition(text);
 
@@ -339,39 +342,39 @@ class ConditionTest {
 
     // Each map contains the answers of the checks that have run so far, keyed by their index from left to right
     static Stream<Arguments> provideSettledEvaluateCases() {
-        return Stream.of(Arguments.of("a",             Map.of(0, true), true),
-                         Arguments.of("a",             Map.of(0, false), false),
-                         Arguments.of("a && b",        Map.of(0, false), false),
-                         Arguments.of("a && b",        Map.of(0, true, 1, true), true),
-                         Arguments.of("a && b",        Map.of(0, true, 1, false), false),
-                         Arguments.of("a || b",        Map.of(0, true), true),
-                         Arguments.of("a || b",        Map.of(0, false, 1, true), true),
-                         Arguments.of("a || b",        Map.of(0, false, 1, false), false),
-                         Arguments.of("!(a && b)",     Map.of(0, false), true),
-                         Arguments.of("!(a && b)",     Map.of(0, true, 1, true), false),
-                         Arguments.of("!!(a && b)",    Map.of(0, true, 1, true), true),
-                         Arguments.of("!!!(a && b)",   Map.of(0, false), true),
-                         Arguments.of("a && b || c",   Map.of(0, true, 1, true), true),
-                         Arguments.of("a && b || c",   Map.of(0, false, 2, true), true),
-                         Arguments.of("a && (b || c)", Map.of(0, true, 1, false, 2, true), true),
-                         Arguments.of("(a || b) && c", Map.of(0, false, 1, false), false));
+        return Stream.of(Arguments.of("a",             Map.of(0, true), TRUE),
+                         Arguments.of("a",             Map.of(0, false), FALSE),
+                         Arguments.of("a && b",        Map.of(0, false), FALSE),
+                         Arguments.of("a && b",        Map.of(0, true, 1, true), TRUE),
+                         Arguments.of("a && b",        Map.of(0, true, 1, false), FALSE),
+                         Arguments.of("a || b",        Map.of(0, true), TRUE),
+                         Arguments.of("a || b",        Map.of(0, false, 1, true), TRUE),
+                         Arguments.of("a || b",        Map.of(0, false, 1, false), FALSE),
+                         Arguments.of("!(a && b)",     Map.of(0, false), TRUE),
+                         Arguments.of("!(a && b)",     Map.of(0, true, 1, true), FALSE),
+                         Arguments.of("!!(a && b)",    Map.of(0, true, 1, true), TRUE),
+                         Arguments.of("!!!(a && b)",   Map.of(0, false), TRUE),
+                         Arguments.of("a && b || c",   Map.of(0, true, 1, true), TRUE),
+                         Arguments.of("a && b || c",   Map.of(0, false, 2, true), TRUE),
+                         Arguments.of("a && (b || c)", Map.of(0, true, 1, false, 2, true), TRUE),
+                         Arguments.of("(a || b) && c", Map.of(0, false, 1, false), FALSE));
     }
 
     /**
-     * Checks that {@code evaluate} returns {@code null} while the condition still depends on a check that has
-     * yet to run.
+     * Checks that {@code evaluate} returns {@code UNDECIDED} while the condition still depends on a check that
+     * has yet to run.
      *
      * @param text    the source text of the condition
      * @param answers the answers of the checks that have run, keyed by index
      */
     @ParameterizedTest
     @MethodSource("provideUnsettledEvaluateCases")
-    void testEvaluate_withValidArgs_ReturnsNull(String text, Map<Integer, Boolean> answers) {
+    void testEvaluate_withValidArgs_ReturnsUndecided(String text, Map<Integer, Boolean> answers) {
         var condition = new Condition(text);
 
         var actual = condition.evaluate(answers);
 
-        assertNull(actual);
+        assertEquals(UNDECIDED, actual);
     }
 
     // Each map leaves out a check whose answer the condition still depends on

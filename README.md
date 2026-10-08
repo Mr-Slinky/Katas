@@ -1,17 +1,17 @@
 # Katas
 
 Katas is a Java project that students download and extend. A student writes their own methods in a
-copy of the code, and Katas runs those methods and shows each step of the run as a visual output.
+copy of the code. Katas then runs those methods and shows each step of the run as a visual output.
 
 ## Trace Tables
 
 The trace table is the first visual output planned for Katas. A trace table has one column for each
 variable and each condition, and one row for each step of a method. Each cell shows the value that
-variable or condition had at that step, meaning a student reads down the table to follow how the
-method changed its variables and which way each condition went.
+variable or condition had at that step. A student reads down the table to follow how the method
+changed its variables and whether each condition was true or false.
 
 A student tracing the loop below by hand would write one row each time a variable changes or the
-condition is checked. The numbers down the left of the code are line numbers:
+loop checks its condition. The code shows its line numbers down the left:
 
 ```java
 1  int sum = 0;
@@ -20,9 +20,10 @@ condition is checked. The numbers down the left of the code are line numbers:
 4  }
 ```
 
-The far-left column of the trace table gives the line on which each step happens. A variable's cell
-is filled in only on the row where its value changes, meaning a blank cell keeps the value written
-above it:
+The trace table gives the line of each step in its first column and the statement run at that step
+in its second. Katas fills in a variable's cell only on a row where its value changes, meaning a
+blank cell keeps the value written above it. A condition's cell shows its result on each row where
+the loop checks it:
 
 | Line | Statement  | `sum` | `i` | `i <= 3` |
 |------|------------|-------|-----|----------|
@@ -54,15 +55,16 @@ A student installs Java and Maven once, with the package manager for their opera
 ### Windows
 
 A student on Windows installs Eclipse Temurin JDK 25 and the Chocolatey package manager with winget.
-Both commands run in a PowerShell window opened with **Run as administrator**:
+The student runs both commands in a PowerShell window opened with **Run as administrator**:
 
 ```
 winget install --id EclipseAdoptium.Temurin.25.JDK -e
 winget install --id Chocolatey.Chocolatey -e
 ```
 
-The student then closes that window and opens a new one, again with **Run as administrator**, to
-pick up the `choco` command. Chocolatey installs Maven and adds it to the `PATH`:
+The student then closes that window and opens a new one, again with **Run as administrator**,
+since only a new window finds the `choco` command on the `PATH`. The student then installs Maven
+with Chocolatey, which adds Maven to the `PATH`:
 
 ```
 choco install maven -y
@@ -87,7 +89,7 @@ mvn -version
 ```
 
 The first line from `java` starts with `openjdk version "25`, and the first line from `mvn` starts
-with `Apache Maven 3.9` or later.
+with `Apache Maven` followed by version 3.9 or later.
 
 ## Building
 

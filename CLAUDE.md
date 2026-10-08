@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 This file guides AI agents working in the Katas repository. The global CLAUDE.md still applies,
-apart from its sections on Spotless, Checkstyle, PMD, JaCoCo and Log4j2. Those sections describe
-tooling that this build has yet to adopt.
+apart from its sections on Spotless, Checkstyle, PMD, JaCoCo and Log4j2. The build uses Maven
+Enforcer, the compiler plugin and Surefire alone.
 
 ## Project
 
@@ -10,27 +10,17 @@ Katas is a Java project that students download and extend. A student writes thei
 in their copy of the code. Katas then runs those methods and shows each step of the run as a
 visual output.
 
-The first visual output is the trace table. A trace table has one column for each variable and one
-row for each step of the method, and each cell shows the value that variable had at that step. A
-student reads down the table to follow how the method changed its variables.
-
-The trace table is the first visual output to be configured, and the developer plans more after it.
+The first visual output is the trace table, which README.md describes in full. The maintainer has
+decided to add further visual outputs after it.
 
 ## Build
 
-Katas is a single Maven module. It requires Java 25 and Maven 3.9 or later, and the Maven
-Enforcer plugin fails the build on anything older. Tests use JUnit 5 (Jupiter). The commands below
-run from the repository root.
-
-| Task                     | Command                         |
-|--------------------------|---------------------------------|
-| Build and install        | `mvn clean install -DskipTests` |
-| Run every test           | `mvn test`                      |
-| Run one test class       | `mvn test -Dtest=<ClassName>`   |
+Katas is a single Maven module. README.md lists the Java and Maven versions it requires and the
+commands that build and test it, which agents run from the repository root.
 
 ## AI policy
 
-This policy covers everyone who works in this repository: the developer who maintains Katas,
+This policy covers everyone who works in this repository: the maintainer of Katas,
 and each student who extends a downloaded copy. Wherever this file says "the developer", it means
 whichever of those two is at the keyboard. Agents follow this policy in every session, whatever the
 request.
@@ -40,8 +30,8 @@ and AI agents help with that understanding and act as peer reviewers.
 
 ### Discussion and instructions
 
-A message that discusses an idea, a design or a problem gets a reply in conversation, and the agent
-builds nothing. Building starts only when a message asks for it in plain words, such as "write",
+The agent answers a message that discusses an idea, a design or a problem in conversation alone.
+The agent starts building only when a message asks for it in plain words, such as "write",
 "implement", "fix" or "commit". Where a message could be either, the agent treats it as discussion.
 
 | Message                                                    | Treat as    |
@@ -52,7 +42,7 @@ builds nothing. Building starts only when a message asks for it in plain words, 
 
 ### Areas open to agents
 
-Agents have free rein in four areas:
+Agents may act without asking in three areas:
 
 1. **Documentation and comments.** Agents write and edit Javadoc, inline comments, READMEs and
    anything under `docs/`.
@@ -61,17 +51,17 @@ Agents have free rein in four areas:
    unclear, the agent asks first. After writing the method, the agent explains the Java concepts it
    relies on, then stops.
 3. **Git.** Agents write every commit message, the developer's included. An agent commits its own
-   changes once the developer has reviewed them, as the Commits section sets out. It commits the
-   developer's work, pushes and pulls each time the developer asks.
+   changes as the Commits section sets out. Each time the developer asks, it commits the
+   developer's work, pushes, or pulls.
 
-Every other change waits for an explicit instruction from the developer. That includes writing more
+An agent makes every other change only on an explicit instruction from the developer. That includes writing more
 than one method, adding classes, packages or modules, restructuring code, adding dependencies and
 changing the logic of code the developer wrote.
 
 ### Code review
 
-Most requests ask for a review of code the developer wrote. The review exists to improve the
-developer's Java.
+When the developer asks for a review of their code, the review exists to improve the developer's
+Java.
 
 - The agent orders findings by importance: bugs first, then non-idiomatic Java, then style.
 - Each finding states the problem and the Java reason behind it, such as references and mutation,

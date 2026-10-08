@@ -12,20 +12,37 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * TDD progress: {@code register}, {@code getChecked}, {@code reset}, {@code getEvents}, {@code enter},
+ * {@code param}, {@code set}, {@code line}, {@code loop}, {@code exit}, the four check methods and
+ * {@code Checked} are covered.
+ *
+ * <p>
+ * {@code Probe} keeps its state in static fields. {@link #resetProbe()} clears the events and the loop count
+ * before each test, but the registered checks stay. Each test therefore uses the id that {@code register}
+ * returns to it.
+ *
+ * @author Kheagen Haskins
+ * @version 1.0.0
+ *         <p>
+ *         Last modified: 2026-10-08
+ * @since 1.0.0
+ */
 class ProbeTest {
 
+    /**
+     * Clears the events and the loop count that the previous test recorded.
+     */
     @BeforeEach
     void resetProbe() {
         Probe.reset();
     }
 
+    /**
+     * Confirms that two checks registered in a row receive consecutive ids, each of which returns its own check.
+     */
     @Test
     void testRegister_withValidArgs_ReturnsConsecutiveIds() {
         var first  = buildChecked("a");
@@ -39,17 +56,26 @@ class ProbeTest {
                   () -> assertSame(second, Probe.getChecked(secondId)));
     }
 
+    /**
+     * Confirms that {@code register} rejects a null check.
+     */
     @Test
     void testRegister_withNullArgs_ThrowsNullPointerException() {
         assertThrows(NullPointerException.class, () -> Probe.register(null));
     }
 
+    /**
+     * Confirms that {@code getChecked} throws for an id that no check has.
+     */
     @ParameterizedTest
     @ValueSource(ints = {-1, Integer.MAX_VALUE})
     void testGetChecked_withInvalidArgs_ThrowsIndexOutOfBoundsException(int id) {
         assertThrows(IndexOutOfBoundsException.class, () -> Probe.getChecked(id));
     }
 
+    /**
+     * Confirms that {@code reset} keeps a check registered before it.
+     */
     @Test
     void testReset_withRegisteredCheck_KeepsCheck() {
         var checked = buildChecked("a");
@@ -60,6 +86,9 @@ class ProbeTest {
         assertSame(checked, Probe.getChecked(id));
     }
 
+    /**
+     * Confirms that {@code reset} clears the events recorded before it.
+     */
     @Test
     void testReset_withRecordedEvents_ClearsEvents() {
         Probe.enter("gcd");
@@ -70,6 +99,9 @@ class ProbeTest {
         assertTrue(Probe.getEvents().isEmpty());
     }
 
+    /**
+     * Confirms that a loop pass after {@code reset} succeeds when the loops had made {@link Probe#MAX_LOOPS} passes.
+     */
     @Test
     void testReset_withLoopLimitReached_ClearsLoopCount() {
         for (var i = 0; i < Probe.MAX_LOOPS; i++) {
@@ -81,6 +113,9 @@ class ProbeTest {
         assertDoesNotThrow(Probe::loop);
     }
 
+    /**
+     * Confirms that {@code getEvents} returns one event per step, in the order the steps ran.
+     */
     @Test
     void testGetEvents_withRecordedSteps_ReturnsEventsInOrder() {
         var id = Probe.register(buildChecked("big != 0"));
@@ -101,6 +136,9 @@ class ProbeTest {
         assertEquals(expected, Probe.getEvents());
     }
 
+    /**
+     * Confirms that {@code loop} leaves the list of events empty.
+     */
     @Test
     void testGetEvents_withLoopPasses_ReturnsNoEvents() {
         Probe.loop();
@@ -111,6 +149,9 @@ class ProbeTest {
         assertTrue(actual.isEmpty());
     }
 
+    /**
+     * Confirms that a list returned by {@code getEvents} stays the same when a later step records an event.
+     */
     @Test
     void testGetEvents_withLaterStep_ReturnsUnchangedCopy() {
         Probe.enter("gcd");
@@ -121,6 +162,9 @@ class ProbeTest {
         assertEquals(List.of(new Probe.Enter("gcd")), events);
     }
 
+    /**
+     * Confirms that the list {@code getEvents} returns throws when a caller adds to it.
+     */
     @Test
     void testGetEvents_withValidArgs_ThrowsUnsupportedOperationException() {
         var events = Probe.getEvents();
@@ -129,6 +173,9 @@ class ProbeTest {
         assertThrows(UnsupportedOperationException.class, () -> events.add(extra));
     }
 
+    /**
+     * Confirms that the loops may make exactly {@link Probe#MAX_LOOPS} passes.
+     */
     @Test
     void testLoop_withPassesAtLimit_NoThrow() {
         for (var i = 0; i < Probe.MAX_LOOPS - 1; i++) {
@@ -138,6 +185,9 @@ class ProbeTest {
         assertDoesNotThrow(Probe::loop);
     }
 
+    /**
+     * Confirms that {@code loop} throws {@code Runaway} on the pass after {@link Probe#MAX_LOOPS}.
+     */
     @Test
     void testLoop_withPassesPastLimit_ThrowsRunaway() {
         for (var i = 0; i < Probe.MAX_LOOPS; i++) {
@@ -147,6 +197,9 @@ class ProbeTest {
         assertThrows(Probe.Runaway.class, Probe::loop);
     }
 
+    /**
+     * Confirms that each step may record the event that brings the call to {@link Probe#MAX_EVENTS} events.
+     */
     @ParameterizedTest
     @MethodSource("provideRecordingSteps")
     void testRecordingStep_withEventsBelowLimit_NoThrow(Executable step) {
@@ -157,6 +210,9 @@ class ProbeTest {
         assertDoesNotThrow(step);
     }
 
+    /**
+     * Confirms that each step throws {@code Runaway} once the call has recorded {@link Probe#MAX_EVENTS} events.
+     */
     @ParameterizedTest
     @MethodSource("provideRecordingSteps")
     void testRecordingStep_withEventLimitReached_ThrowsRunaway(Executable step) {
@@ -167,6 +223,9 @@ class ProbeTest {
         assertThrows(Probe.Runaway.class, step);
     }
 
+    /**
+     * Returns one call to each method of {@code Probe} that records an event.
+     */
     static Stream<Named<Executable>> provideRecordingSteps() {
         return Stream.of(Named.of("enter", () -> Probe.enter("gcd")),
                          Named.of("param", () -> Probe.param("big", "18")),
@@ -183,15 +242,19 @@ class ProbeTest {
                                   () -> Probe.checkNull(null, Probe.register(buildChecked("node == null")))));
     }
 
+    /**
+     * Confirms that {@code check(int, int, int)} records the answer of the check for two values, negated checks
+     * included.
+     */
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
-            `i > 1`     | 5 | 1 | true
-            `i > 1`     | 1 | 5 | false
-            `!(i > 1)`  | 5 | 1 | false
-            `!(i > 1)`  | 1 | 5 | true
-            `x == y`    | 3 | 3 | true
-            `x <= y`    | 4 | 3 | false
-            """)
+                                                                  `i > 1`    | 5 | 1 | true
+                                                                  `i > 1`     | 1 | 5 | false
+                                                                  `!(i > 1)`  | 5 | 1 | false
+                                                                  `!(i > 1)`  | 1 | 5 | true
+                                                                  `x == y`    | 3 | 3 | true
+                                                                  `x <= y`    | 4 | 3 | false
+                                                                  """)
     void testCheck_withTwoValues_RecordsExpectedResult(String text, int left, int right, boolean expected) {
         var id = Probe.register(buildChecked(text));
 
@@ -200,15 +263,18 @@ class ProbeTest {
         assertEquals(List.of(new Probe.Result(id, expected)), Probe.getEvents());
     }
 
+    /**
+     * Confirms that {@code check(int, int)} records the answer of the check when it compares one value with 0.
+     */
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
-            `big % i == 0` | 0 | true
-            `big % i == 0` | 3 | false
-            `found`        | 1 | true
-            `found`        | 0 | false
-            `!found`       | 1 | false
-            `!found`       | 0 | true
-            """)
+                                                                  `big % i == 0` | 0 | true
+                                                                  `big % i == 0` | 3 | false
+                                                                  `found`        | 1 | true
+                                                                  `found`        | 0 | false
+                                                                  `!found`       | 1 | false
+                                                                  `!found`       | 0 | true
+                                                                  """)
     void testCheck_withOneValue_RecordsExpectedResult(String text, int value, boolean expected) {
         var id = Probe.register(buildChecked(text));
 
@@ -217,13 +283,16 @@ class ProbeTest {
         assertEquals(List.of(new Probe.Result(id, expected)), Probe.getEvents());
     }
 
+    /**
+     * Confirms that {@code checkSame} records the answer of an {@code ==} or {@code !=} check on two objects.
+     */
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
-            `a == b` | true  | true
-            `a == b` | false | false
-            `a != b` | true  | false
-            `a != b` | false | true
-            """)
+                                                                  `a == b` | true  | true
+                                                                  `a == b` | false | false
+                                                                  `a != b` | true  | false
+                                                                  `a != b` | false | true
+                                                                  """)
     void testCheckSame_withValidArgs_RecordsExpectedResult(String text, boolean isSame, boolean expected) {
         var id    = Probe.register(buildChecked(text));
         var left  = new Object();
@@ -234,13 +303,16 @@ class ProbeTest {
         assertEquals(List.of(new Probe.Result(id, expected)), Probe.getEvents());
     }
 
+    /**
+     * Confirms that {@code checkNull} records the answer of an {@code == null} or {@code != null} check.
+     */
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
-            `node == null` | true  | true
-            `node == null` | false | false
-            `node != null` | true  | false
-            `node != null` | false | true
-            """)
+                                                                  `node == null` | true  | true
+                                                                  `node == null` | false | false
+                                                                  `node != null` | true  | false
+                                                                  `node != null` | false | true
+                                                                  """)
     void testCheckNull_withValidArgs_RecordsExpectedResult(String text, boolean isNull, boolean expected) {
         var id    = Probe.register(buildChecked(text));
         var value = isNull ? null : new Object();
@@ -250,6 +322,9 @@ class ProbeTest {
         assertEquals(List.of(new Probe.Result(id, expected)), Probe.getEvents());
     }
 
+    /**
+     * Confirms that {@code check} evaluates the check at the index that {@code Checked} records.
+     */
     @Test
     void testCheck_withSecondCheckOfCondition_RecordsExpectedResult() {
         var condition = new Condition("a > 1 && b < 2");
@@ -260,11 +335,17 @@ class ProbeTest {
         assertEquals(List.of(new Probe.Result(id, false)), Probe.getEvents());
     }
 
+    /**
+     * Confirms that {@code check} throws for an id that no check has.
+     */
     @Test
     void testCheck_withUnregisteredId_ThrowsIndexOutOfBoundsException() {
         assertThrows(IndexOutOfBoundsException.class, () -> Probe.check(1, 2, -1));
     }
 
+    /**
+     * Confirms that {@code getCheck} returns the check of the condition at the recorded index.
+     */
     @Test
     void testGetCheck_withValidArgs_ReturnsCheckAtIndex() {
         var condition = new Condition("a && b");
@@ -275,6 +356,9 @@ class ProbeTest {
         assertEquals(condition.getChecks().get(1), actual);
     }
 
+    /**
+     * Confirms that {@code Checked} rejects an index outside the checks of its condition.
+     */
     @ParameterizedTest
     @ValueSource(ints = {-1, 2})
     void testChecked_withInvalidArgs_ThrowsIndexOutOfBoundsException(int index) {
@@ -283,11 +367,17 @@ class ProbeTest {
         assertThrows(IndexOutOfBoundsException.class, () -> new Probe.Checked("gcd", 7, condition, index));
     }
 
+    /**
+     * Confirms that {@code Checked} rejects a null condition.
+     */
     @Test
     void testChecked_withNullArgs_ThrowsNullPointerException() {
         assertThrows(NullPointerException.class, () -> new Probe.Checked("gcd", 7, null, 0));
     }
 
+    /**
+     * Builds a {@code Checked} for the first check of {@code text}, in method {@code gcd} on line 7.
+     */
     private static Probe.Checked buildChecked(String text) {
         return new Probe.Checked("gcd", 7, new Condition(text), 0);
     }

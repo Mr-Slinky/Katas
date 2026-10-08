@@ -14,18 +14,21 @@ import java.util.stream.Stream;
 import static com.slinky.katas.internal.tracing.Condition.Answer.FALSE;
 import static com.slinky.katas.internal.tracing.Condition.Answer.TRUE;
 import static com.slinky.katas.internal.tracing.Condition.Answer.UNDECIDED;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TDD progress: {@code findClosingBracket}, {@code isWrappedInBrackets}, {@code splitTopLevel},
- * {@code stripComment}, {@code maskLiterals}, {@code Operator.eval}, {@code findOperator}, {@code parseCheck},
- * {@code getChecks}, {@code evaluate} and {@code parseLine} are covered. {@code Check.eval} is still to be tested
- * directly.
+ * {@code stripComment}, {@code maskLiterals}, {@code Operator.eval}, {@code Check.eval}, {@code Answer.of},
+ * {@code Answer.negate}, {@code findOperator}, {@code parseCheck}, {@code getChecks}, {@code evaluate} and
+ * {@code parseLine} are covered.
  *
  * @author Kheagen Haskins
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-07
+ *         Last modified: 2026-10-08
  * @since 1.0.0
  */
 class ConditionTest {
@@ -207,6 +210,69 @@ class ConditionTest {
             Condition.Operator operator, long left, long right, boolean expected
     ) {
         var actual = operator.eval(left, right);
+
+        assertEquals(expected, actual);
+    }
+
+    /**
+     * Confirms the result of {@link Condition.Check#eval(long, long)}, which compares the two values with the
+     * operator of the check, then flips the result when the check is negated. Each operator in the rows has a
+     * negated row and a plain row for the same values.
+     *
+     * @param operator  the operator of the check
+     * @param isNegated whether the check is negated
+     * @param left      the value on the left of the operator
+     * @param right     the value on the right of the operator
+     * @param expected  the result of the check
+     */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', textBlock = """
+            GREATER   | false | 5 | 1 | true
+            GREATER   | true  | 5 | 1 | false
+            GREATER   | false | 1 | 5 | false
+            GREATER   | true  | 1 | 5 | true
+            EQUAL     | false | 6 | 6 | true
+            EQUAL     | true  | 6 | 6 | false
+            NOT_EQUAL | true  | 6 | 7 | false
+            IS_TRUE   | false | 0 | 0 | false
+            IS_TRUE   | true  | 0 | 0 | true
+            IS_TRUE   | true  | 3 | 0 | false
+            """)
+    void testCheckEval_withValidArgs_ReturnsExpectedValue(
+            Condition.Operator operator, boolean isNegated, long left, long right, boolean expected
+    ) {
+        var check = new Condition.Check("x", operator, isNegated);
+
+        var actual = check.eval(left, right);
+
+        assertEquals(expected, actual);
+    }
+
+    /**
+     * Checks the {@link Condition.Answer} that {@code Answer.of} returns for each {@code boolean} value.
+     *
+     * @param value    the value of a check that has run
+     * @param expected the answer for that value
+     */
+    @ParameterizedTest
+    @CsvSource({"true, TRUE", "false, FALSE"})
+    void testOf_withValidArgs_ReturnsExpectedValue(boolean value, Condition.Answer expected) {
+        var actual = Condition.Answer.of(value);
+
+        assertEquals(expected, actual);
+    }
+
+    /**
+     * Checks the {@link Condition.Answer} that {@code negate} returns for each constant. {@code UNDECIDED} stays
+     * {@code UNDECIDED}, since a check that has yet to run has no answer to flip.
+     *
+     * @param answer   the answer to flip
+     * @param expected the answer after the flip
+     */
+    @ParameterizedTest
+    @CsvSource({"TRUE, FALSE", "FALSE, TRUE", "UNDECIDED, UNDECIDED"})
+    void testNegate_withValidArgs_ReturnsExpectedValue(Condition.Answer answer, Condition.Answer expected) {
+        var actual = answer.negate();
 
         assertEquals(expected, actual);
     }

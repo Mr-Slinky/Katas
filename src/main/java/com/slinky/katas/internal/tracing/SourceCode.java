@@ -45,7 +45,7 @@ import java.util.Set;
  * @author Kheagen Haskins
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-07
+ *         Last modified: 2026-10-08
  * @since 1.0.0
  */
 final class SourceCode {
@@ -53,22 +53,36 @@ final class SourceCode {
     // ========================================================================================== \\
     //                                           Static                                           \\
     // ========================================================================================== \\
-    // The deepest folder level the search enters, counting the folder the program runs from as level 0
+    // Limits the search to files at most this many levels below the folder where it starts, which is level 0
     private static final int         MAX_DEPTH    = 12;
-    // Build output folders, which contain compiled classes rather than source files
+    // Names of the folders the search skips, which contain build output or downloaded packages
     private static final Set<String> SKIPPED      = Set.of("target", "out", "build", "bin", "node_modules");
-    // The encoding that many Windows editors save in, used for a file that is not valid UTF-8
+    // The encoding that readLines falls back to for a file that is not valid UTF-8
     private static final Charset     WINDOWS_1252 = Charset.forName("windows-1252");
 
     /**
-     * Searches for the {@code .java} file that a class was compiled from, and reads its lines.
+     * Searches the working directory for the {@code .java} file that a class was compiled from, and reads its
+     * lines. The method calls {@link #find(Class, Path)} with the working directory as the starting folder.
+     *
+     * @param type the compiled class
+     *
+     * @return the source file, with no lines when the file cannot be found or read
+     */
+    static SourceCode find(Class<?> type) {
+        // Starts the search at the absolute path of the working directory
+        return find(type, Path.of("").toAbsolutePath());
+    }
+
+    // Package-private, exposed for unit-test verification.
+    /**
+     * Searches a folder for the {@code .java} file that a class was compiled from, and reads its lines.
      *
      * <p>
-     * The search starts in the folder the program runs from and covers every folder inside it, down to 12
-     * levels. It passes over each folder whose name starts with a dot, along with the build folders
-     * {@code target}, {@code out}, {@code build}, {@code bin} and {@code node_modules}. A nested class maps to
+     * The search starts in {@code root} and reads every file at most 12 levels below it. It passes over each
+     * folder below {@code root} whose name starts with a dot, along with {@code target}, {@code out}, {@code build},
+     * {@code bin} and {@code node_modules}. A nested class maps to
      * the file of its outermost class. Where several files match, the method reads the one with the fewest
-     * folders between it and the starting folder. Among matches at the same depth, it reads the one whose path
+     * folders between it and {@code root}. Among matches at the same depth, it reads the one whose path
      * comes first when the paths are sorted as text. The method reads the file as UTF-8, or as Windows-1252 where the file
      * contains a byte sequence that UTF-8 rejects.
      *
@@ -78,11 +92,12 @@ final class SourceCode {
      * </pre>
      *
      * @param type the compiled class
+     * @param root the absolute path of the folder where the search starts
      *
      * @return the source file, with no lines when the file cannot be found or read
      */
-    static SourceCode find(Class<?> type) {
-        // Gets the file name from the class name, using the outer class's name for a nested class
+    static SourceCode find(Class<?> type, Path root) {
+        // Gets the file name from the class name, using the outermost class's name for a nested class
         var name     = type.getName();
         var dot      = name.lastIndexOf('.');
         var simple   = name.substring(dot + 1);
@@ -90,15 +105,13 @@ final class SourceCode {
         // Builds the path the file must end with by turning the package's dots into folders
         var wanted = Path.of(dot < 0 ? "" : name.substring(0, dot).replace('.', '/'), fileName);
 
-        // Gets the absolute path of the working directory, where the search starts
-        var root = Path.of("").toAbsolutePath();
         // Stores the path of every matching file the walk finds
         var matches = new ArrayList<Path>();
         try {
             var visitor = new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    // Skips hidden folders and build folders, but always enters the working directory
+                    // Skips hidden folders and build folders, but always enters root
                     var folder = dir.getFileName() == null ? "" : dir.getFileName().toString();
                     var skip   = !dir.equals(root) && (folder.startsWith(".") || SKIPPED.contains(folder));
                     return skip ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
@@ -106,7 +119,7 @@ final class SourceCode {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    // Stores each file whose path ends with the wanted path, and carries on walking
+                    // Stores each file whose path ends with the wanted path, and continues the walk
                     if (file.endsWith(wanted)) {
                         matches.add(file);
                     }
@@ -115,13 +128,13 @@ final class SourceCode {
 
                 @Override
                 public FileVisitResult visitFileFailed(Path file, IOException ex) {
-                    // Skips a folder or file that cannot be opened and carries on walking
+                    // Skips a folder or file that cannot be opened and continues the walk
                     return FileVisitResult.CONTINUE;
                 }
             };
-            // Walks every folder below the working directory, up to MAX_DEPTH levels deep
+            // Walks every folder below root, up to MAX_DEPTH levels deep
             Files.walkFileTree(root, EnumSet.noneOf(FileVisitOption.class), MAX_DEPTH, visitor);
-            // Picks the match nearest the working directory, and breaks a tie by comparing the paths as text
+            // Picks the match nearest root, and breaks a tie by comparing the paths as text
             var nearest = matches.stream()
                                  .min(Comparator.comparingInt(Path::getNameCount)
                                                 .thenComparing(Comparator.naturalOrder()));
@@ -132,7 +145,7 @@ final class SourceCode {
         } catch (IOException ex) {
             // Falls through to the empty SourceCode below when a folder or file cannot be read
         }
-        // Returns a SourceCode with no lines when the file was not found
+        // Returns a SourceCode with no lines when the file was not found or could not be read
         return new SourceCode(fileName, List.of());
     }
 
@@ -155,14 +168,18 @@ final class SourceCode {
     // ========================================================================================== \\
 
     /**
-     * @return the name of the source file, such as {@code "Gcd.java"}, whether or not the file was found
+     * Returns the name of the source file, such as {@code "Gcd.java"}, whether or not the file was found.
+     *
+     * @return the name of the source file
      */
     String getFileName() {
         return fileName;
     }
 
     /**
-     * @return the number of lines in the file, or 0 when the file was not found
+     * Returns the number of lines in the file, or 0 when the file was not found, could not be read or is empty.
+     *
+     * @return the number of lines in the file
      */
     int getLineCount() {
         return lines.size();
@@ -228,7 +245,7 @@ final class SourceCode {
         try {
             return Files.readAllLines(file);
         } catch (CharacterCodingException ex) {
-            // Decodes the bytes as Windows-1252, which replaces any undefined byte rather than throwing
+            // Reads the file again as Windows-1252, the fallback for a file that is not valid UTF-8
             return new String(Files.readAllBytes(file), WINDOWS_1252).lines().toList();
         }
     }

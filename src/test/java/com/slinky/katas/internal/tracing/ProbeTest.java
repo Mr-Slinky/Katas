@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -168,12 +167,20 @@ class ProbeTest {
         assertThrows(Probe.Runaway.class, step);
     }
 
-    static Stream<Arguments> provideRecordingSteps() {
-        return Stream.of(Arguments.of(Named.of("enter", (Executable) () -> Probe.enter("gcd"))),
-                         Arguments.of(Named.of("param", (Executable) () -> Probe.param("big", "18"))),
-                         Arguments.of(Named.of("set", (Executable) () -> Probe.set("big", "6"))),
-                         Arguments.of(Named.of("line", (Executable) () -> Probe.line(7))),
-                         Arguments.of(Named.of("exit", (Executable) () -> Probe.exit("6"))));
+    static Stream<Named<Executable>> provideRecordingSteps() {
+        return Stream.of(Named.of("enter", () -> Probe.enter("gcd")),
+                         Named.of("param", () -> Probe.param("big", "18")),
+                         Named.of("set", () -> Probe.set("big", "6")),
+                         Named.of("line", () -> Probe.line(7)),
+                         Named.of("exit", () -> Probe.exit("6")),
+                         Named.of("check two values",
+                                  () -> Probe.check(5, 1, Probe.register(buildChecked("i > 1")))),
+                         Named.of("check one value",
+                                  () -> Probe.check(1, Probe.register(buildChecked("found")))),
+                         Named.of("checkSame",
+                                  () -> Probe.checkSame("a", "b", Probe.register(buildChecked("a == b")))),
+                         Named.of("checkNull",
+                                  () -> Probe.checkNull(null, Probe.register(buildChecked("node == null")))));
     }
 
     @ParameterizedTest
@@ -241,6 +248,16 @@ class ProbeTest {
         Probe.checkNull(value, id);
 
         assertEquals(List.of(new Probe.Result(id, expected)), Probe.getEvents());
+    }
+
+    @Test
+    void testCheck_withSecondCheckOfCondition_RecordsExpectedResult() {
+        var condition = new Condition("a > 1 && b < 2");
+        var id        = Probe.register(new Probe.Checked("gcd", 7, condition, 1));
+
+        Probe.check(5, 2, id);
+
+        assertEquals(List.of(new Probe.Result(id, false)), Probe.getEvents());
     }
 
     @Test

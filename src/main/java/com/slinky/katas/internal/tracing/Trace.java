@@ -29,7 +29,8 @@ public final class Trace {
     // ========================================================================================== \\
     //                                           Fields                                           \\
     // ========================================================================================== \\
-    private final List<Step> steps = new ArrayList<>();
+    private final List<Column> columns = new ArrayList<>();
+    private final List<Step>   steps   = new ArrayList<>();
 
     private int     rowCount;
     private int     startSteps;
@@ -54,6 +55,80 @@ public final class Trace {
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
+    private static String formatAnswer(boolean answer) {
+        return answer ? "T" : "F";
+    }
+
+    private int findColumn(
+            Map<String, Integer> keys,
+            List<String> owners,
+            String method,
+            String key,
+            String heading,
+            boolean isCondition
+    ) {
+        return keys.computeIfAbsent(method + "\n" + isCondition + "\n" + key, _ -> {
+            columns.add(new Column(heading, isCondition));
+            owners.add(method);
+            return columns.size() - 1;
+        });
+    }
+
+    private void fillCheck(
+            Map<String, Integer> keys,
+            List<String> owners,
+            Call call,
+            RowBuilder builder,
+            Probe.Result result
+    ) {
+        var checked   = Probe.getChecked(result.id());
+        var condition = checked.condition();
+        var where     = "line " + checked.line() + ": ";
+
+        int checkCount = condition.getChecks().size();
+        for (int c = 0; c < checkCount; c++) {
+            findColumn(
+                    keys,
+                    owners,
+                    call.method,
+                    where + condition.getText() + " #" + c,
+                    condition.getChecks().get(c).text(),
+                    true
+            );
+        }
+        int wholeColumn = checkCount < 2 ? -1 : findColumn(
+                keys,
+                owners,
+                call.method,
+                where + condition.getText(),
+                condition.getText(),
+                true
+        );
+
+        int column = findColumn(
+                keys,
+                owners,
+                call.method, where + condition.getText() + " #" + checked.index(),
+                checked.getCheck().text(),
+                true
+        );
+        builder.put(column, formatAnswer(result.value()), false, checked.line());
+
+        if (checkCount < 2) {
+            return;
+        }
+        if (checked.index() == 0 || call.condition != condition) {
+            call.answers.clear();
+            call.condition = condition;
+        }
+        call.answers.put(checked.index(), result.value());
+
+        var whole = condition.evaluate(call.answers);
+        if (whole != Condition.Answer.UNDECIDED) {
+            builder.put(wholeColumn, formatAnswer(whole == Condition.Answer.TRUE), false, checked.line());
+            call.answers.clear();
+        }
+    }
 
     // ========================================================================================== \\
     //                                       Helper Classes                                       \\

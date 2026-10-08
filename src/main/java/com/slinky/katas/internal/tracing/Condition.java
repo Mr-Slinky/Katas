@@ -114,11 +114,11 @@ public final class Condition {
             var open  = matcher.end() - 1;   // the match ends just after the opening bracket
             var close = findClosingBracket(scanned, open);
 
-            if (close < 0) continue; // the condition continues on the next line, and the method skips it
+            if (close < 0) continue; // Skips a condition that continues on the next line
 
             var inside = code.substring(open + 1, close);
             if (matcher.group(1).equals("for")) {
-                // A for statement places its condition between its two semicolons
+                // Keeps only the part between the two semicolons of a for statement
                 var parts = splitTopLevel(inside, ";");
                 inside = parts.size() == 3 ? parts.get(1) : "";
             }
@@ -152,8 +152,8 @@ public final class Condition {
         /** Compares with {@code >}. */
         GREATER(">"),
         /**
-         * The operator of a check with no comparison symbol, which is {@code true} when the value on its left
-         * is anything but 0.
+         * The operator of a check with no comparison symbol. {@code eval} returns {@code true} for it when
+         * {@code left} is anything but 0.
          */
         IS_TRUE("");
 
@@ -240,7 +240,7 @@ public final class Condition {
      * One yes-or-no check inside a condition, such as {@code x % i == 0}.
      *
      * <p>
-     * The checks parsed from four pieces of text:
+     * Four pieces of text parse to these checks:
      *
      * <pre>
      * "i > 1"       ->  Check("i > 1", GREATER, false)
@@ -375,7 +375,7 @@ public final class Condition {
             var c = text.charAt(i);
             if (quote != 0) {
                 if (c == '\\') {
-                    i++;   // the character after a backslash belongs to the literal, a quote included
+                    i++;   // Skips the character after a backslash, which belongs to the literal
                 } else if (c == quote) {
                     quote = 0;
                 }
@@ -445,13 +445,13 @@ public final class Condition {
             } else if (c == ')') {
                 depth--;
             } else if (outsideBrackets && scanned.startsWith(separator, i)) {
-                // The current part ends where the separator begins, and the next part begins after it
+                // Ends the current part where the separator begins, and starts the next part after it
                 parts.add(text.substring(start, i));
                 start = i + separator.length();
-                i     = start - 1;   // the loop's i++ then moves i on to start, past the separator
+                i     = start - 1;   // Sets i one short of start, since the loop's i++ moves it on
             }
         }
-        // The text after the last split forms the final part, or the whole text when the loop made no split
+        // Adds the text after the last split as the final part, which is the whole text when the loop made no split
         parts.add(text.substring(start));
         return parts;
     }
@@ -478,7 +478,7 @@ public final class Condition {
             var c = line.charAt(i);
             if (quote != 0) {
                 if (c == '\\') {
-                    i++; // the character after a backslash belongs to the literal, a quote included
+                    i++; // Skips the character after a backslash, which belongs to the literal
                 }
                 else if (c == quote){
                     quote = 0;
@@ -524,7 +524,7 @@ public final class Condition {
             } else {
                 masked.setCharAt(i, ' ');
                 if (c == '\\' && i + 1 < text.length()) {
-                    masked.setCharAt(++i, ' ');   // the character after a backslash belongs to the literal
+                    masked.setCharAt(++i, ' ');   // Blanks the escaped character after a backslash
                 }
             }
         }
@@ -534,7 +534,7 @@ public final class Condition {
     /**
      * Returns the operator of the first comparison symbol in the body of one check. The method searches from
      * left to right and skips anything inside brackets or inside a literal. A body with no comparison symbol
-     * outside them, such as {@code found} or {@code isPrime(a < b)}, gives {@link Operator#IS_TRUE}.
+     * outside them, such as {@code found} or {@code isPrime(a < b)}, returns {@link Operator#IS_TRUE}.
      *
      * <pre>{@code
      * "i >= 1"           ->  GREATER_OR_EQUAL
@@ -544,6 +544,11 @@ public final class Condition {
      * "isPrime(a < b)"   ->  IS_TRUE
      * "found"            ->  IS_TRUE
      * }</pre>
+     *
+     * <h4 id="find-operator-limitations">Known limitation</h4>
+     * The method returns the wrong operator for a shift operator before the comparison. In {@code a << 2 > b},
+     * it matches {@code <} at the first {@code <<} and returns {@code LESS}, where the check compares with
+     * {@code >}.
      *
      * @param body the body of one check, with any leading {@code !} and wrapping brackets removed
      *
@@ -655,7 +660,7 @@ public final class Condition {
         var scanned     = maskLiterals(trimmed);
         var joinsChecks = scanned.contains("&&") || scanned.contains("||");
         if (joinsChecks && isWrappedInBrackets(trimmed)) {
-            // Removes the brackets around a group of checks and parses the text inside of them
+            // Removes the brackets around a group of checks and parses the text inside them
             return parse(trimmed.substring(1, trimmed.length() - 1), checks);
         }
         if (joinsChecks && trimmed.startsWith("!")) {
@@ -732,7 +737,7 @@ public final class Condition {
      */
     private sealed interface Node permits Leaf, Not, And, Or {}
 
-    private record Leaf(int index) implements Node {}   // index is the check's position in the list of checks
+    private record Leaf(int index) implements Node {}   // index is this check's position in the list parse fills
 
     private record Not(Node inner) implements Node {}   // a "!" in front of a bracketed group of checks
 

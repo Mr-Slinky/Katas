@@ -4,7 +4,7 @@ public class App
 {
 
     static void main() {
-        throw new UnsupportedOperationException("");
+        throw new UnsupportedOperationException("The Katas entry point is a placeholder");
     }
 
 }

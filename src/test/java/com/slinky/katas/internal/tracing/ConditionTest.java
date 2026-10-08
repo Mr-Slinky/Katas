@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ConditionTest {
 
     /**
-     * Checks the index that {@code findClosingBracket} returns for the bracket at {@code open}. The rows
+     * Confirms the index that {@code findClosingBracket} returns for the bracket at {@code open}. The rows
      * include nested brackets, brackets and escaped quotes inside a literal, and a bracket that the text never
      * closes.
      *
@@ -62,7 +62,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks that {@code isWrappedInBrackets} returns {@code true} when the first bracket closes at the last
+     * Confirms that {@code isWrappedInBrackets} returns {@code true} when the first bracket closes at the last
      * character.
      *
      * @param text text whose opening bracket closes at its final character
@@ -76,11 +76,11 @@ class ConditionTest {
     }
 
     /**
-     * Checks that {@code isWrappedInBrackets} returns {@code false} for text that starts with anything but a
+     * Confirms that {@code isWrappedInBrackets} returns {@code false} for text that starts with anything but a
      * bracket, for a first bracket that closes early, and for a first bracket that never closes.
      *
      * @param text text whose first character is something other than a bracket, or whose first bracket closes
-     *             before its final character
+     *             before its final character, or never closes
      */
     @ParameterizedTest
     @ValueSource(strings = {"", "a > b", "(a) && (b)", "(a > b", "(a > b) ", " (a > b)"})
@@ -91,7 +91,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks the parts that {@code splitTopLevel} returns. A separator inside brackets or inside a string
+     * Confirms the parts that {@code splitTopLevel} returns. A separator inside brackets or inside a string
      * literal stays in its part, and each part keeps the spaces around it. The rows also cover a bracket inside
      * a char literal, which leaves the bracket depth unchanged.
      *
@@ -124,8 +124,9 @@ class ConditionTest {
     }
 
     /**
-     * Checks the text that {@code stripComment} returns. A {@code //} inside a string literal stays in the line,
-     * as does one after a quote inside a char literal. The first {@code //} outside every literal ends the line.
+     * Confirms the text that {@code stripComment} returns. A {@code //} inside a string literal stays in the
+     * line. A quote inside a char literal opens no string, meaning a {@code //} after {@code '"'} still ends the
+     * line. The first {@code //} outside every literal ends the line.
      *
      * @param line     one line of source code
      * @param expected the line up to its comment, or the whole line where it has none
@@ -150,9 +151,9 @@ class ConditionTest {
     }
 
     /**
-     * Checks the text that {@code maskLiterals} returns. Every character inside a string or char literal becomes
-     * a space, an escaped quote and an escaped backslash included. The quotes stay, and a literal that the text
-     * never closes runs to the end of the text.
+     * Confirms the text that {@code maskLiterals} returns. Every character inside a string or char literal becomes
+     * a space, an escaped quote and an escaped backslash included. The quotes stay. A literal that the text never
+     * closes runs to the end of the text.
      *
      * @param text     one line of source code
      * @param expected the text with the inside of each literal replaced by spaces
@@ -176,7 +177,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks the result of {@link Condition.Operator#eval(long, long)} for each operator, with a {@code true}
+     * Confirms the result of {@link Condition.Operator#eval(long, long)} for each operator, with a {@code true}
      * row and a {@code false} row for every constant. The {@code IS_TRUE} rows also vary the right value, which
      * that operator ignores.
      *
@@ -249,7 +250,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks the {@link Condition.Answer} that {@code Answer.of} returns for each {@code boolean} value.
+     * Confirms the {@link Condition.Answer} that {@code Answer.of} returns for each {@code boolean} value.
      *
      * @param value    the value of a check that has run
      * @param expected the answer for that value
@@ -263,7 +264,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks the {@link Condition.Answer} that {@code negate} returns for each constant. {@code UNDECIDED} stays
+     * Confirms the {@link Condition.Answer} that {@code negate} returns for each constant. {@code UNDECIDED} stays
      * {@code UNDECIDED}, since a check that has yet to run has no answer to flip.
      *
      * @param answer   the answer to flip
@@ -278,13 +279,10 @@ class ConditionTest {
     }
 
     /**
-     * Checks the {@link Condition.Operator} that {@code findOperator} returns for the body of one check. The
-     * rows include a comparison symbol inside a string or char literal, which the method passes over.
-     *
-     * <h4 id="find-operator-limitations">Known limitation</h4>
-     * {@code findOperator} returns the wrong operator for a shift operator before the comparison, which the rows
-     * below leave out. In {@code a << 2 > b}, the method matches {@code <} at the first {@code <<} and returns
-     * {@code LESS}. The check compares with {@code >}, and the method should return {@code GREATER}.
+     * Confirms the {@link Condition.Operator} that {@code findOperator} returns for the body of one check. The
+     * rows include a comparison symbol inside a string or char literal, which the method passes over. They leave
+     * out a shift operator before the comparison, which the Javadoc of {@link Condition#findOperator(String)}
+     * records as a known limitation.
      *
      * @param body     the body of one check, with any leading {@code !} and wrapping brackets removed
      * @param expected the operator the method should return
@@ -314,7 +312,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks the {@link Condition.Check} that {@code parseCheck} builds from the text of one check. Each leading
+     * Confirms the {@link Condition.Check} that {@code parseCheck} builds from the text of one check. Each leading
      * {@code !} flips {@code isNegated}. The method removes the wrapping brackets before it looks for the
      * operator.
      *
@@ -347,9 +345,9 @@ class ConditionTest {
     }
 
     /**
-     * Checks the number of checks that {@code getChecks} returns. A bracketed group keeps one check for each side
-     * of its {@code &&} or {@code ||}, however many {@code !} stand in front of it. A {@code !} in front of a
-     * single check stays part of that check, and an {@code &&} inside a string literal joins nothing.
+     * Confirms the number of checks that {@code getChecks} returns. A bracketed group keeps one check for each
+     * side of its {@code &&} or {@code ||}, however many {@code !} stand in front of it. A {@code !} in front of a
+     * single check stays part of that check. An {@code &&} inside a string literal joins nothing.
      *
      * @param text     the source text of the condition
      * @param expected the number of checks in the condition
@@ -375,7 +373,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks that the list {@code getChecks} returns rejects a change, which keeps the index of each check in
+     * Confirms that the list {@code getChecks} returns rejects a change, which keeps the index of each check in
      * step with the keys that {@code evaluate} accepts.
      */
     @Test
@@ -387,7 +385,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks that {@code evaluate} returns {@code TRUE} or {@code FALSE} once the answers given decide the
+     * Confirms that {@code evaluate} returns {@code TRUE} or {@code FALSE} once the answers given decide the
      * condition. Several rows leave out the checks that {@code &&} or {@code ||} stops before.
      *
      * @param text     the source text of the condition
@@ -406,7 +404,7 @@ class ConditionTest {
         assertEquals(expected, actual);
     }
 
-    // Each map contains the answers of the checks that have run so far, keyed by their index from left to right
+    // Provides answers that decide each condition, keyed by the index of each check
     static Stream<Arguments> provideSettledEvaluateCases() {
         return Stream.of(Arguments.of("a",             Map.of(0, true), TRUE),
                          Arguments.of("a",             Map.of(0, false), FALSE),
@@ -427,7 +425,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks that {@code evaluate} returns {@code UNDECIDED} while the condition still depends on a check that
+     * Confirms that {@code evaluate} returns {@code UNDECIDED} while the condition still depends on a check that
      * has yet to run.
      *
      * @param text    the source text of the condition
@@ -457,7 +455,7 @@ class ConditionTest {
     }
 
     /**
-     * Checks the text of each condition that {@code parseLine} finds on one line. The rows cover every keyword,
+     * Confirms the text of each condition that {@code parseLine} finds on one line. The rows cover every keyword,
      * two statements on one line, a keyword inside a comment or a string literal, both kinds of {@code for}, and
      * a condition that continues on the next line.
      *

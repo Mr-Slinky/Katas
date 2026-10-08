@@ -5,13 +5,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Records each step of a traced call as a {@link Event}.
+ * Records each step of a traced call as an {@link Event}.
  *
  * <p>
- * The reporting copy of a class calls the public static methods of {@code Probe} after each step: a method
- * starts, a variable takes a new value, a check runs, a new line begins, a loop goes round again, or a method
- * returns. Each call adds one event to a list, and {@link #getEvents()} returns that list in the order the
- * steps ran.
+ * The reporting copy of a class is a copy of its compiled code with a call to {@code Probe} added at each step.
+ * The reporting copy calls the public static methods of {@code Probe} as each step happens: a method starts, a
+ * variable takes a new value, a check runs, a new line begins, a loop goes round again, or a method returns.
+ * Each of these calls apart from {@link #loop()} adds one event to a list, and {@link #getEvents()} returns
+ * that list in the order the steps ran.
  *
  * <p>
  * A check needs an id before the reporting copy can report it. A caller registers each check with
@@ -20,7 +21,7 @@ import java.util.Objects;
  *
  * <pre>{@code
  * var condition = Condition.parseLine("while (big != 0)").getFirst();
- * var id        = Probe.register(new Probe.Checked("gcd", 7, condition, 0));   // 0 for the first check
+ * var id        = Probe.register(new Probe.Checked("gcd", 7, condition, 0));   // index 0, the first check
  *
  * Probe.reset();
  * Probe.enter("gcd");
@@ -29,6 +30,9 @@ import java.util.Objects;
  *
  * Probe.getEvents();   // [Enter[method=gcd], Param[name=big, value=18], Result[id=0, value=true]]
  * }</pre>
+ *
+ * <p>
+ * The {@code id} in the {@code Result} is 0 because this is the first check registered.
  *
  * <p>
  * Every field is static, meaning the whole program shares one list of events and one list of checks. The lists
@@ -49,7 +53,8 @@ public final class Probe {
      * The number of passes that the loops of one traced call may make in total before {@link #loop()} throws
      * {@link Runaway}.
      */
-    static final int MAX_LOOPS  = 500; // Keep things civilised
+    static final int MAX_LOOPS  = 500;
+
     /**
      * The number of events that one traced call may record before the next step throws {@link Runaway}.
      */
@@ -155,9 +160,11 @@ public final class Probe {
     }
 
     /**
-     * Counts one more pass of a loop. The count covers every loop in the call together, and records no event.
+     * Adds one to the count of loop passes, which covers every loop in the call together. The method records
+     * no event.
      *
-     * @throws Runaway if the loops have made more than {@link #MAX_LOOPS} passes since the last {@link #reset()}
+     * @throws Runaway if the loops have made more than {@link #MAX_LOOPS} passes since the last
+     *                 {@link #reset()}
      */
     public static void loop() {
         loops++;
@@ -199,7 +206,8 @@ public final class Probe {
 
     /**
      * Records the answer to a check that compares one value with 0, such as {@code big % i == 0}, or a check
-     * with no comparison, such as a {@code boolean} variable. The method compares {@code value} with 0.
+     * with no comparison, such as a {@code boolean} variable passed as 1 for {@code true} and 0 for
+     * {@code false}. The method compares {@code value} with 0.
      *
      * @param value the value compared with 0
      * @param id    the id that {@link #register(Checked)} returned for the check
@@ -212,8 +220,8 @@ public final class Probe {
     }
 
     /**
-     * Records the answer to a check that compares two objects with {@code ==} or {@code !=}. The method stands
-     * 0 in for the same object and 1 for two different objects, then compares that number with 0.
+     * Records the answer to a check that compares two objects with {@code ==} or {@code !=}. The method uses 0
+     * when both are the same object and 1 when they differ, then compares that number with 0.
      *
      * @param left  the object on the left of the comparison
      * @param right the object on the right of the comparison
@@ -227,8 +235,8 @@ public final class Probe {
     }
 
     /**
-     * Records the answer to a check that compares an object with {@code null}, such as {@code node != null}. The
-     * method stands 0 in for {@code null} and 1 for any object, then compares that number with 0.
+     * Records the answer to a check that compares an object with {@code null}, such as {@code node != null}.
+     * The method uses 0 for {@code null} and 1 for any object, then compares that number with 0.
      *
      * @param value the object compared with {@code null}
      * @param id    the id that {@link #register(Checked)} returned for the check
@@ -253,7 +261,7 @@ public final class Probe {
      *
      * @param method the name of the method
      */
-    record Enter(String method)             implements Event {}
+    record Enter(String method) implements Event {}
 
     /**
      * A parameter had a value when its method started.
@@ -269,7 +277,7 @@ public final class Probe {
      * @param name  the name of the variable
      * @param value the new value, as text
      */
-    record Set(String name, String value)   implements Event {}
+    record Set(String name, String value) implements Event {}
 
     /**
      * A check ran.
@@ -277,21 +285,21 @@ public final class Probe {
      * @param id    the id that {@link #register(Checked)} returned for the check
      * @param value the answer of the check
      */
-    record Result(int id, boolean value)    implements Event {}
+    record Result(int id, boolean value) implements Event {}
 
     /**
      * The code on a new line of the source file began to run.
      *
      * @param line the line number, where the first line of the file is 1
      */
-    record Line(int line)                   implements Event {}
+    record Line(int line) implements Event {}
 
     /**
      * A method returned.
      *
      * @param value the value the method returned, as text, or {@code null} for a {@code void} method
      */
-    record Exit(String value)               implements Event {}
+    record Exit(String value) implements Event {}
 
     /**
      * One check of a condition, and the place in the source file where it is written.
@@ -304,14 +312,15 @@ public final class Probe {
     record Checked(String method, int line, Condition condition, int index) {
 
         /**
-         * Builds a {@code Checked} once its index identifies one of the checks of its condition.
+         * Builds a {@code Checked} after confirming that {@code index} is a valid position in
+         * {@code condition.getChecks()}.
          *
          * @throws NullPointerException      if {@code condition} is null
          * @throws IndexOutOfBoundsException if {@code index} is below 0, or not below the number of checks in
          *                                   {@code condition}
          */
         Checked {
-            Objects.checkIndex(index, condition.getChecks().size()); // Fail fast!
+            Objects.checkIndex(index, condition.getChecks().size());
         }
 
         /**
@@ -322,30 +331,30 @@ public final class Probe {
         Condition.Check getCheck() {
             return condition.getChecks().get(index);
         }
+
     }
 
     /**
-     * Stops a traced call whose loops make more than {@link #MAX_LOOPS} passes, or which records more than
-     * {@link #MAX_EVENTS} events. {@code Runaway} extends {@link Error}, meaning a {@code catch (Exception e)} in
-     * the traced code lets it pass.
+     * Stops a traced call whose loops make more than {@link #MAX_LOOPS} passes, or whose next step would record
+     * more than {@link #MAX_EVENTS} events. {@code Runaway} extends {@link Error}, meaning a
+     * {@code catch (Exception e)} in the traced code lets it pass.
      */
     static final class Runaway extends Error {
 
         Runaway(String message) {
             super(message);
         }
+
     }
 
     // ========================================================================================== \\
     //                                       Constructor(s)                                       \\
     // ========================================================================================== \\
-    private Probe() {
-    }
+    private Probe() { }
 
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
-
     /**
      * Adds one event to the events of the current call.
      *

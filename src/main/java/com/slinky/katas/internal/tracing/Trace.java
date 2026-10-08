@@ -3,7 +3,8 @@ package com.slinky.katas.internal.tracing;
 import java.util.*;
 
 /**
- * Takes the list of events that Probe recorded during one call and turns it into a trace table.
+ * The trace table of one traced call, stored as one {@link Step} for each cell. The constructor, still to be
+ * written, will read the events that {@link Probe} recorded during the call and turn them into these steps.
  *
  * @author Kheagen Haskins
  * @version 1.0.0
@@ -59,7 +60,8 @@ public final class Trace {
     // ========================================================================================== \\
 
     /**
-     * Stores the method that is running, the line it last reported and the condition it is part-way through
+     * Stores the method that is running, the line it last reported, the condition it is part-way through and
+     * the answer of each check in that condition that has run.
      */
     private static final class Call {
 

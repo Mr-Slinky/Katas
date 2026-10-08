@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class SourceCodeTest {
 
-    // The comment line contains an "é", which Windows-1252 saves as a byte outside UTF-8
+    // The comment line contains an "é", which Windows-1252 saves as the single byte 0xE9, a sequence that UTF-8 rejects
     private static final List<String> LINES = List.of("package java.util;",
                                                       "// café",
                                                       "public final class Objects {}");
@@ -59,8 +59,7 @@ class SourceCodeTest {
     Path folder;
 
     /**
-     * Checks that {@code find} reads a source file whatever encoding the editor saved it in. The rows cover
-     * UTF-8, and Windows-1252, the default for many editors on Windows.
+     * Checks that {@code find} reads a source file saved in UTF-8 and one saved in Windows-1252.
      *
      * @param charsetName the encoding the source file is saved in
      */

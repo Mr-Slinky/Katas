@@ -1,0 +1,758 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Condition.java Structure Charts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root {
+  /* Layout: one reading column for prose (about 68ch); chart sheets break out to the full 1200px frame */
+  --paper: #edf1ee;
+  --sheet: #fafcfa;
+  --grid: #e6ece8;
+  --ink: #16201c;
+  --muted: #5b6a64;
+  --rule: #c6d1cb;
+  --box: #ffffff;
+  --accent: #1d7a52;
+  --accent-ink: #145f3f;
+  --code-bg: #e3eae6;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1412; --sheet: #131b18; --grid: #19231f; --ink: #dce6e1; --muted: #93a59e;
+    --rule: #2a3732; --box: #18221e; --accent: #5ec796; --accent-ink: #84dcb0; --code-bg: #1b2622;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1412; --sheet: #131b18; --grid: #19231f; --ink: #dce6e1; --muted: #93a59e;
+  --rule: #2a3732; --box: #18221e; --accent: #5ec796; --accent-ink: #84dcb0; --code-bg: #1b2622;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.frame { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 64px; display: grid; gap: 56px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 4.6vw, 3.1rem); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 1.6rem; font-weight: 600; }
+h3 { font-size: 1.2rem; font-weight: 600; }
+p { margin: 0; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.05em 0.35em; border-radius: 3px; }
+pre {
+  margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5;
+  background: var(--code-bg); padding: 10px 12px; border-radius: 4px; overflow-x: auto; white-space: pre;
+}
+.eyebrow {
+  font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500;
+}
+.stack { display: grid; gap: 14px; }
+.stack-lg { display: grid; gap: 24px; }
+
+/* Masthead */
+.masthead { display: grid; gap: 16px; border-bottom: 2px solid var(--ink); padding-bottom: 28px; }
+.masthead .lede { font-size: 1.1rem; max-width: 64ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 28px; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+
+/* Key */
+.key { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 0 40px; }
+.key-item { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px 16px; padding-block: 18px; border-top: 1px solid var(--rule); align-items: start; }
+.key-item pre { grid-column: 1 / -1; }
+.key-item svg { width: 112px; height: auto; display: block; }
+.key-text { display: grid; gap: 8px; min-width: 0; }
+.key-text strong { font-family: var(--display); font-size: 1.02rem; font-weight: 600; }
+.key-text p { font-size: 0.94rem; }
+.rules { display: grid; gap: 10px; font-size: 0.94rem; color: var(--muted); max-width: 72ch; }
+
+/* Sheets */
+.sheet { margin: 0; background-color: var(--sheet); border: 1px solid var(--rule); }
+.sheet-body {
+  overflow-x: auto; padding-block: 20px; padding-inline: 12px;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.sheet-body svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.titleblock {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: stretch;
+  border-bottom: 1px solid var(--rule); font-family: var(--display);
+}
+.titleblock > div { padding: 10px 16px; display: grid; align-content: center; gap: 2px; min-width: 0; }
+.titleblock > div + div { border-left: 1px solid var(--rule); }
+.tb-label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.tb-num { font-size: 1.5rem; font-weight: 600; line-height: 1; }
+.tb-entry { font-family: var(--mono); font-size: 0.82rem; }
+.sheet figcaption { padding: 14px 16px 18px; border-top: 1px solid var(--rule); font-size: 0.95rem; }
+.sheet figcaption p { max-width: 80ch; }
+
+/* Structure chart drawing */
+.sc .box { fill: var(--box); stroke: var(--ink); stroke-width: 1.4; }
+.sc .box.ext { fill: var(--sheet); stroke: var(--muted); stroke-dasharray: 5 4; }
+.sc .libbar { stroke: var(--ink); stroke-width: 1.2; }
+.sc .rep { fill: var(--muted); }
+.sc .lbl { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+.sc .lbl.ext { fill: var(--muted); }
+.sc .sub { font-family: var(--body); font-size: 10px; fill: var(--muted); }
+.sc .note { font-family: var(--body); font-size: 11px; font-style: italic; fill: var(--muted); }
+.sc .call { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+.sc .head { fill: var(--ink); }
+.sc .diamond { fill: var(--box); stroke: var(--ink); stroke-width: 1.3; }
+.sc .loop { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+.sc .cpl { stroke: var(--accent); stroke-width: 1.4; fill: none; }
+.sc .cpl-head { fill: var(--accent); }
+.sc .tail-d { fill: var(--sheet); stroke: var(--accent); stroke-width: 1.4; }
+.sc .tail-f { fill: var(--accent); stroke: var(--accent); stroke-width: 1.4; }
+.sc .clbl {
+  font-family: var(--mono); font-size: 11px; fill: var(--accent-ink);
+  paint-order: stroke; stroke: var(--sheet); stroke-width: 3.5px; stroke-linejoin: round;
+}
+.key-item .sc .tail-d, .key-item .sc .clbl { stroke: var(--paper); }
+.key-item .sc .tail-d { stroke: var(--accent); fill: var(--paper); }
+
+/* Table */
+.table-wrap { overflow-x: auto; border-top: 2px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; padding-right: 20px; width: 4ch; }
+td .mono { font-size: 0.86rem; }
+tr.hi td.num { color: var(--accent-ink); font-weight: 500; }
+
+/* Notes */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px 40px; }
+.note-item { display: grid; gap: 8px; align-content: start; border-top: 1px solid var(--rule); padding-top: 14px; }
+.note-item p { font-size: 0.97rem; }
+
+footer { border-top: 1px solid var(--rule); padding-top: 16px; color: var(--muted); font-size: 0.85rem; }
+
+@media (max-width: 760px) {
+  .frame { padding-inline: 16px; gap: 44px; }
+  .sheet-body svg { max-width: none; width: calc(var(--w) * 0.74px); }
+  .titleblock { grid-template-columns: auto minmax(0, 1fr); }
+  .titleblock > div:last-child { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--rule); }
+}
+</style>
+
+<div class="frame">
+
+<header class="masthead">
+  <span class="eyebrow">Structured Design &middot; com.slinky.katas.internal.tracing</span>
+  <h1>Condition.java structure charts</h1>
+  <p class="lede">A structure chart, from Yourdon and Constantine&rsquo;s Structured Design, shows which modules call
+  which, and what passes between them on each call. It leaves out the order of statements inside a module. These four
+  charts cover the 18 modules in <code>Condition.java</code>, with one chart for each way the rest of Katas uses the class.</p>
+  <div class="meta"><span>Condition.java v1.0.0</span><span>Last modified 2026-10-07</span><span>18 modules &middot; 4 charts</span></div>
+</header>
+
+<section class="stack-lg" aria-labelledby="key-h">
+  <div class="stack prose">
+    <h2 id="key-h">Reading the charts</h2>
+    <p>In Structured Design a <em>module</em> is a named piece of code that a caller can invoke and get control back
+    from. In Java that is a method or a constructor. Each symbol below comes with the line in <code>Condition.java</code>
+    that produces it.</p>
+  </div>
+  <div class="key">
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A plain box"><rect class="box" x="6" y="15" width="100" height="30"/><text class="lbl" x="56" y="34" text-anchor="middle" style="font-size:11px">stripComment</text></svg><div class="key-text"><strong>Module</strong><p>One method or constructor in Condition.java. The chart shows what it does for its caller, not the statements inside it.</p></div><pre><code>static String stripComment(String line) {</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="An arrow from an upper box to a lower box"><rect class="box" x="30" y="2" width="52" height="14"/><line class="call" x1="56" y1="16" x2="56" y2="42"/><polygon class="head" points="56,44 51.5,35 60.5,35"/><rect class="box" x="30" y="44" width="52" height="14"/></svg><div class="key-text"><strong>Call</strong><p>An arrow from a module down to a module it calls. The caller sits above.</p></div><pre><code>var code = stripComment(line);   // in parseLine</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="Two small arrows with hollow circles at their tails beside the call arrow, one pointing down and one up"><line class="call" x1="24" y1="2" x2="24" y2="56"/><polygon class="head" points="24,58 19.5,49 28.5,49"/><line class="cpl" x1="40" y1="8" x2="40" y2="23"/><polygon class="cpl-head" points="40,29 36.4,22 43.6,22"/><circle class="tail-d" cx="40" cy="8" r="3.6"/><text class="clbl" x="50" y="22">open</text><line class="cpl" x1="40" y1="54" x2="40" y2="39"/><polygon class="cpl-head" points="40,33 36.4,40 43.6,40"/><circle class="tail-d" cx="40" cy="54" r="3.6"/><text class="clbl" x="50" y="48">close</text></svg><div class="key-text"><strong>Data couple</strong><p>A value passed on a call. The hollow circle marks the tail, and the arrow points the way the value travels: down into the called module, or up as its result.</p></div><pre><code>var close = findClosingBracket(scanned, open);
+// scanned and open go down, close comes back up</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A small arrow with a filled circle at its tail beside the call arrow"><line class="call" x1="30" y1="2" x2="30" y2="56"/><polygon class="head" points="30,58 25.5,49 34.5,49"/><line class="cpl" x1="46" y1="44" x2="46" y2="22"/><polygon class="cpl-head" points="46,16 42.4,23 49.6,23"/><circle class="tail-f" cx="46" cy="44" r="3.6"/><text class="clbl" x="56" y="34">wrapped</text></svg><div class="key-text"><strong>Flag</strong><p>A true-or-false value whose job is to steer what a module does next. The filled circle marks the tail.</p></div><pre><code>} else if (isWrappedInBrackets(body)) {   // in parseCheck</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A small diamond where the call arrow leaves the caller"><rect class="box" x="20" y="0" width="72" height="12"/><line class="call" x1="56" y1="12" x2="56" y2="56"/><polygon class="head" points="56,58 51.5,49 60.5,49"/><polygon class="diamond" points="56,13 62,20 56,27 50,20"/></svg><div class="key-text"><strong>Conditional call</strong><p>The diamond means the call happens only when a test passes.</p></div><pre><code>if (!inside.isBlank()) {
+    conditions.add(new Condition(inside.strip()));
+}</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A curved arrow drawn across two call arrows below the caller"><rect class="box" x="20" y="0" width="72" height="12"/><line class="call" x1="46" y1="12" x2="28" y2="56"/><polygon class="head" points="27.2,58 25.4,48.8 33.6,52"/><line class="call" x1="66" y1="12" x2="84" y2="56"/><polygon class="head" points="84.8,58 78.4,52 86.6,48.8"/><path class="loop" d="M30,26 Q56,46 80,26"/><polygon class="head" points="82.5,24 77.3,32 74.2,25.6"/></svg><div class="key-text"><strong>Repeated calls</strong><p>The curved arrow crosses every call that runs once per pass of a loop.</p></div><pre><code>while (matcher.find()) {
+    ...
+    var close = findClosingBracket(scanned, open);</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a second line inside each side"><rect class="box" x="6" y="15" width="100" height="30"/><line class="libbar" x1="13" y1="15" x2="13" y2="45"/><line class="libbar" x1="99" y1="15" x2="99" y2="45"/><text class="lbl" x="56" y="34" text-anchor="middle" style="font-size:11px">List.copyOf</text></svg><div class="key-text"><strong>Library module</strong><p>A method from the JDK that Condition.java calls but does not define.</p></div><pre><code>this.checks = List.copyOf(found);</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a dashed outline"><rect class="box ext" x="6" y="15" width="100" height="30"/><text class="lbl ext" x="56" y="34" text-anchor="middle" style="font-size:11px">SourceCode</text></svg><div class="key-text"><strong>Caller in another file</strong><p>A dashed box is a method outside Condition.java, drawn so you can see where each chart starts.</p></div><pre><code>return Condition.parseLine(readLine(number));   // in SourceCode</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a filled corner at its top left"><rect class="box" x="6" y="15" width="100" height="30"/><polygon class="rep" points="6,15 18,15 6,27"/><text class="lbl" x="58" y="34" text-anchor="middle" style="font-size:11px">maskLiterals</text></svg><div class="key-text"><strong>Drawn more than once</strong><p>The filled corner means the same method appears more than once in this chart, to keep lines from crossing.</p></div><pre><code>var scanned = maskLiterals(code);   // in parseLine
+var scanned = maskLiterals(text);   // in splitTopLevel</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a filled corner, labelled parse, calls itself"><rect class="box" x="6" y="12" width="100" height="36"/><polygon class="rep" points="6,12 18,12 6,24"/><text class="lbl" x="56" y="29" text-anchor="middle" style="font-size:11px">parse</text><text class="sub" x="56" y="41" text-anchor="middle">calls itself</text></svg><div class="key-text"><strong>Recursive call</strong><p>A marked box labelled “calls itself” sits under its own module. The call goes back into the same method.</p></div><pre><code>return new Not(parse(inner, checks));   // in parse</code></pre></div>
+  </div>
+  <div class="rules">
+    <p>Couples take the name of the variable in the code, so you can find each one in <code>Condition.java</code>.
+    The object an instance method runs on is not drawn as a couple. <code>Answer.negate</code>, for example, flips
+    the answer it runs on, so the chart shows only the flipped answer coming back.</p>
+    <p>The <code>Matcher.find</code> box stands for <code>find</code>, <code>end</code> and <code>group</code> together.
+    Calls to <code>String</code> and <code>StringBuilder</code> methods are left out, as are the record constructors for
+    <code>Leaf</code>, <code>Not</code>, <code>And</code>, <code>Or</code> and <code>Check</code>, which only store values.</p>
+  </div>
+</section>
+
+<section class="stack-lg" aria-label="Structure charts">
+
+<figure class="sheet" id="chart-1">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">1</span></div>
+    <div><span class="tb-label">Title</span><h3>Reading conditions from a line</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">parseLine(String)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="7 12 1209.5 800" width="1209.5" height="800" role="img" aria-label="Structure chart 1: SourceCode.findConditionsOn calls parseLine, which calls stripComment, maskLiterals, Matcher.find, findClosingBracket, splitTopLevel and the Condition constructor." style="--w:1209.5">
+  <line class="call" x1="568.3" y1="76" x2="568.3" y2="260"/>
+  <polygon class="head" points="568.3,262 563.8,253 572.8,253"/>
+  <line class="call" x1="526.3" y1="308" x2="84.3" y2="493.2"/>
+  <polygon class="head" points="82.5,494 89.1,486.4 92.5,494.7"/>
+  <line class="call" x1="543.1" y1="308" x2="249.2" y2="492.9"/>
+  <polygon class="head" points="247.5,494 252.7,485.4 257.5,493"/>
+  <line class="call" x1="559.9" y1="308" x2="420.7" y2="492.4"/>
+  <polygon class="head" points="419.5,494 421.3,484.1 428.5,489.5"/>
+  <line class="call" x1="576.7" y1="308" x2="612.9" y2="492"/>
+  <polygon class="head" points="613.2,494 607.1,486 615.9,484.3"/>
+  <line class="call" x1="593.5" y1="308" x2="802.1" y2="492.7"/>
+  <polygon class="head" points="803.6,494 793.9,491.4 799.9,484.7"/>
+  <polygon class="diamond" points="599.5,306.3 605.5,313.3 599.5,320.3 593.5,313.3"/>
+  <line class="call" x1="610.3" y1="308" x2="1052.3" y2="493.2"/>
+  <polygon class="head" points="1054.2,494 1044.1,494.7 1047.6,486.4"/>
+  <polygon class="diamond" points="617.7,304.1 623.7,311.1 617.7,318.1 611.7,311.1"/>
+  <line class="call" x1="803.6" y1="540" x2="803.6" y2="724"/>
+  <polygon class="head" points="803.6,726 799.1,717 808.1,717"/>
+  <line class="call" x1="1043.2" y1="540" x2="971.5" y2="724.1"/>
+  <polygon class="head" points="970.8,726 969.8,716 978.2,719.2"/>
+  <line class="call" x1="1065.2" y1="540" x2="1136.9" y2="724.1"/>
+  <polygon class="head" points="1137.6,726 1130.2,719.2 1138.6,716"/>
+  <path class="loop" d="M522.8,325 Q608,360 693.2,325"/>
+  <polygon class="head" points="693.2,325 688.1,331 685.3,324.3"/>
+  <line class="cpl" x1="581.3" y1="152.3" x2="581.3" y2="176.3"/>
+  <polygon class="cpl-head" points="581.3,176.3 577.7,169.3 584.9,169.3"/>
+  <circle class="tail-d" cx="581.3" cy="152.3" r="3.6"/>
+  <text class="clbl" x="588.3" y="168.3">line</text>
+  <line class="cpl" x1="581.3" y1="222.8" x2="581.3" y2="198.8"/>
+  <polygon class="cpl-head" points="581.3,198.8 584.9,205.8 577.7,205.8"/>
+  <circle class="tail-d" cx="581.3" cy="222.8" r="3.6"/>
+  <text class="clbl" x="588.3" y="214.8">conditions</text>
+  <line class="cpl" x1="321.6" y1="379.7" x2="299.4" y2="389"/>
+  <polygon class="cpl-head" points="299.4,389 304.5,383 307.3,389.6"/>
+  <circle class="tail-d" cx="321.6" cy="379.7" r="3.6"/>
+  <text class="clbl" x="292.4" y="388.4" text-anchor="end">line</text>
+  <line class="cpl" x1="188.5" y1="435.5" x2="210.6" y2="426.2"/>
+  <polygon class="cpl-head" points="210.6,426.2 205.5,432.2 202.8,425.6"/>
+  <circle class="tail-d" cx="188.5" cy="435.5" r="3.6"/>
+  <text class="clbl" x="181.5" y="434.9" text-anchor="end">code</text>
+  <line class="cpl" x1="376.4" y1="397.6" x2="356.1" y2="410.3"/>
+  <polygon class="cpl-head" points="356.1,410.3 360.1,403.6 363.9,409.7"/>
+  <circle class="tail-d" cx="376.4" cy="397.6" r="3.6"/>
+  <text class="clbl" x="349.1" y="407.9" text-anchor="end">code</text>
+  <line class="cpl" x1="311.7" y1="438.2" x2="332" y2="425.5"/>
+  <polygon class="cpl-head" points="332,425.5 328,432.2 324.2,426.1"/>
+  <circle class="tail-d" cx="311.7" cy="438.2" r="3.6"/>
+  <text class="clbl" x="304.7" y="435.8" text-anchor="end">scanned</text>
+  <line class="cpl" x1="521.4" y1="380.7" x2="506.9" y2="399.8"/>
+  <polygon class="cpl-head" points="506.9,399.8 508.3,392.1 514,396.4"/>
+  <circle class="tail-d" cx="521.4" cy="380.7" r="3.6"/>
+  <text class="clbl" x="528.4" y="394.2">scanned</text>
+  <line class="cpl" x1="478.8" y1="437" x2="493.3" y2="417.9"/>
+  <polygon class="cpl-head" points="493.3,417.9 491.9,425.6 486.2,421.3"/>
+  <circle class="tail-f" cx="478.8" cy="437" r="3.6"/>
+  <text class="clbl" x="500.3" y="431.4">found</text>
+  <line class="cpl" x1="450.7" y1="474.2" x2="465.2" y2="455.1"/>
+  <polygon class="cpl-head" points="465.2,455.1 463.8,462.8 458.1,458.5"/>
+  <circle class="tail-d" cx="450.7" cy="474.2" r="3.6"/>
+  <text class="clbl" x="472.2" y="468.6">keyword, end</text>
+  <line class="cpl" x1="610" y1="410" x2="614.6" y2="433.5"/>
+  <polygon class="cpl-head" points="614.6,433.5 609.7,427.3 616.8,426"/>
+  <circle class="tail-d" cx="610" cy="410" r="3.6"/>
+  <text class="clbl" x="621.6" y="425.7">scanned, open</text>
+  <line class="cpl" x1="621.9" y1="470.7" x2="617.3" y2="447.2"/>
+  <polygon class="cpl-head" points="617.3,447.2 622.2,453.3 615.1,454.7"/>
+  <circle class="tail-d" cx="621.9" cy="470.7" r="3.6"/>
+  <text class="clbl" x="628.9" y="462.9">close</text>
+  <line class="cpl" x1="719.2" y1="401.9" x2="737.2" y2="417.8"/>
+  <polygon class="cpl-head" points="737.2,417.8 729.6,415.9 734.3,410.5"/>
+  <circle class="tail-d" cx="719.2" cy="401.9" r="3.6"/>
+  <text class="clbl" x="744.2" y="413.9">inside, &quot;;&quot;</text>
+  <line class="cpl" x1="768.7" y1="445.7" x2="750.7" y2="429.8"/>
+  <polygon class="cpl-head" points="750.7,429.8 758.4,431.8 753.6,437.1"/>
+  <circle class="tail-d" cx="768.7" cy="445.7" r="3.6"/>
+  <text class="clbl" x="775.7" y="441.8">parts</text>
+  <line class="cpl" x1="815.1" y1="379.7" x2="837.3" y2="389"/>
+  <polygon class="cpl-head" points="837.3,389 829.4,389.6 832.2,383"/>
+  <circle class="tail-d" cx="815.1" cy="379.7" r="3.6"/>
+  <text class="clbl" x="844.3" y="388.4">inside</text>
+  <line class="cpl" x1="948.2" y1="435.5" x2="926.1" y2="426.2"/>
+  <polygon class="cpl-head" points="926.1,426.2 933.9,425.6 931.2,432.2"/>
+  <circle class="tail-d" cx="948.2" cy="435.5" r="3.6"/>
+  <text class="clbl" x="955.2" y="434.9">condition</text>
+  <line class="cpl" x1="816.6" y1="616.4" x2="816.6" y2="640.4"/>
+  <polygon class="cpl-head" points="816.6,640.4 813,633.4 820.2,633.4"/>
+  <circle class="tail-d" cx="816.6" cy="616.4" r="3.6"/>
+  <text class="clbl" x="823.6" y="632.4">text</text>
+  <line class="cpl" x1="816.6" y1="686.9" x2="816.6" y2="662.9"/>
+  <polygon class="cpl-head" points="816.6,662.9 820.2,669.9 813,669.9"/>
+  <circle class="tail-d" cx="816.6" cy="686.9" r="3.6"/>
+  <text class="clbl" x="823.6" y="678.9">scanned</text>
+  <line class="cpl" x1="1001" y1="612.5" x2="992.3" y2="634.8"/>
+  <polygon class="cpl-head" points="992.3,634.8 991.5,627 998.2,629.6"/>
+  <circle class="tail-d" cx="1001" cy="612.5" r="3.6"/>
+  <text class="clbl" x="985.3" y="627.6" text-anchor="end">text, found</text>
+  <line class="cpl" x1="974.2" y1="681.3" x2="982.9" y2="659"/>
+  <polygon class="cpl-head" points="982.9,659 983.7,666.8 977,664.2"/>
+  <circle class="tail-d" cx="974.2" cy="681.3" r="3.6"/>
+  <text class="clbl" x="967.2" y="674.1" text-anchor="end">root, found</text>
+  <line class="cpl" x1="1107.4" y1="612.5" x2="1116.1" y2="634.8"/>
+  <polygon class="cpl-head" points="1116.1,634.8 1110.2,629.6 1116.9,627"/>
+  <circle class="tail-d" cx="1107.4" cy="612.5" r="3.6"/>
+  <text class="clbl" x="1123.1" y="627.6">found</text>
+  <line class="cpl" x1="1134.2" y1="681.3" x2="1125.5" y2="659"/>
+  <polygon class="cpl-head" points="1125.5,659 1131.4,664.2 1124.6,666.8"/>
+  <circle class="tail-d" cx="1134.2" cy="681.3" r="3.6"/>
+  <text class="clbl" x="1141.2" y="674.1">checks</text>
+  <rect class="box ext" x="496.3" y="30" width="144" height="46"/>
+  <text class="lbl ext" x="568.3" y="50" text-anchor="middle">findConditionsOn</text>
+  <text class="sub" x="568.3" y="65" text-anchor="middle">SourceCode</text>
+  <rect class="box" x="512.3" y="262" width="112" height="46"/>
+  <text class="lbl" x="568.3" y="289" text-anchor="middle">parseLine</text>
+  <rect class="box" x="25" y="494" width="115" height="46"/>
+  <text class="lbl" x="82.5" y="521" text-anchor="middle">stripComment</text>
+  <rect class="box" x="190" y="494" width="115" height="46"/>
+  <polygon class="rep" points="190,494 202,494 190,506"/>
+  <text class="lbl" x="247.5" y="521" text-anchor="middle">maskLiterals</text>
+  <rect class="box" x="355" y="494" width="129" height="46"/>
+  <line class="libbar" x1="362" y1="494" x2="362" y2="540"/>
+  <line class="libbar" x1="477" y1="494" x2="477" y2="540"/>
+  <text class="lbl" x="419.5" y="521" text-anchor="middle">Matcher.find</text>
+  <rect class="box" x="534" y="494" width="158.5" height="46"/>
+  <text class="lbl" x="613.2" y="521" text-anchor="middle">findClosingBracket</text>
+  <rect class="box" x="742.5" y="494" width="122.2" height="46"/>
+  <text class="lbl" x="803.6" y="521" text-anchor="middle">splitTopLevel</text>
+  <rect class="box" x="746.1" y="726" width="115" height="46"/>
+  <polygon class="rep" points="746.1,726 758.1,726 746.1,738"/>
+  <text class="lbl" x="803.6" y="753" text-anchor="middle">maskLiterals</text>
+  <rect class="box" x="993.1" y="494" width="122.2" height="46"/>
+  <text class="lbl" x="1054.2" y="514" text-anchor="middle">new Condition</text>
+  <text class="sub" x="1054.2" y="529" text-anchor="middle">constructor</text>
+  <rect class="box" x="914.8" y="726" width="112" height="46"/>
+  <text class="lbl" x="970.8" y="753" text-anchor="middle">parse</text>
+  <text class="note" x="970.8" y="789" text-anchor="middle">continues in Chart 2</text>
+  <rect class="box" x="1076.8" y="726" width="121.8" height="46"/>
+  <line class="libbar" x1="1083.8" y1="726" x2="1083.8" y2="772"/>
+  <line class="libbar" x1="1191.5" y1="726" x2="1191.5" y2="772"/>
+  <text class="lbl" x="1137.6" y="753" text-anchor="middle">List.copyOf</text>
+</svg>
+  </div>
+  <figcaption><p>SourceCode passes one line of source code to <code>parseLine</code>. It removes any <code>//</code> comment, blanks out the inside of string and char literals, then loops over each <code>if</code>, <code>while</code> and <code>for</code> keyword it finds. For each keyword it finds the closing bracket, keeps only the middle part of a <code>for</code> statement, and builds a <code>Condition</code> from the text when the text is not blank. The <code>parse</code> box continues in Chart 2.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-2">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">2</span></div>
+    <div><span class="tb-label">Title</span><h3>Splitting a condition into checks</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">Condition(String)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="7 -10 1092.8 904" width="1092.8" height="904" role="img" aria-label="Structure chart 2: the Condition constructor calls parse, which calls splitTopLevel, itself, maskLiterals, isWrappedInBrackets and parseCheck; parseCheck calls isWrappedInBrackets and findOperator." style="--w:1092.8">
+  <line class="call" x1="502.1" y1="76" x2="502.1" y2="228"/>
+  <polygon class="head" points="502.1,230 497.6,221 506.6,221"/>
+  <line class="call" x1="460.1" y1="276" x2="88" y2="429.2"/>
+  <polygon class="head" points="86.1,430 92.7,422.4 96.2,430.7"/>
+  <line class="call" x1="481.1" y1="276" x2="254.9" y2="428.9"/>
+  <polygon class="head" points="253.2,430 258.2,421.2 263.2,428.7"/>
+  <polygon class="diamond" points="474.5,273.5 480.5,280.5 474.5,287.5 468.5,280.5"/>
+  <line class="call" x1="502.1" y1="276" x2="417.7" y2="428.3"/>
+  <polygon class="head" points="416.8,430 417.2,419.9 425,424.3"/>
+  <polygon class="diamond" points="498.2,276 504.2,283 498.2,290 492.2,283"/>
+  <line class="call" x1="523.1" y1="276" x2="606.2" y2="428.2"/>
+  <polygon class="head" points="607.1,430 598.9,424.3 606.8,419.9"/>
+  <polygon class="diamond" points="526.9,276 532.9,283 526.9,290 520.9,283"/>
+  <line class="call" x1="544.1" y1="276" x2="916.2" y2="429.2"/>
+  <polygon class="head" points="918.1,430 908,430.7 911.5,422.4"/>
+  <polygon class="diamond" points="551.5,272 557.5,279 551.5,286 545.5,279"/>
+  <line class="call" x1="86.1" y1="476" x2="86.1" y2="628"/>
+  <polygon class="head" points="86.1,630 81.6,621 90.6,621"/>
+  <line class="call" x1="607.1" y1="476" x2="607.1" y2="628"/>
+  <polygon class="head" points="607.1,630 602.6,621 611.6,621"/>
+  <polygon class="diamond" points="607.1,477 613.1,484 607.1,491 601.1,484"/>
+  <line class="call" x1="907.1" y1="476" x2="823.8" y2="628.2"/>
+  <polygon class="head" points="822.9,630 823.2,619.9 831.1,624.3"/>
+  <polygon class="diamond" points="903.2,476 909.2,483 903.2,490 897.2,483"/>
+  <line class="call" x1="929.1" y1="476" x2="1012.3" y2="628.2"/>
+  <polygon class="head" points="1013.2,630 1005,624.3 1012.9,619.9"/>
+  <line class="call" x1="822.9" y1="676" x2="822.9" y2="828"/>
+  <polygon class="head" points="822.9,830 818.4,821 827.4,821"/>
+  <polygon class="diamond" points="822.9,677 828.9,684 822.9,691 816.9,684"/>
+  <line class="call" x1="1013.2" y1="676" x2="1013.2" y2="828"/>
+  <polygon class="head" points="1013.2,830 1008.8,821 1017.8,821"/>
+  <path class="loop" d="M423.7,293 Q439.7,328 455.7,293"/>
+  <polygon class="head" points="455.7,293 456,300.9 449.5,297.9"/>
+  <path class="loop" d="M875.8,493 Q891.8,528 907.8,493"/>
+  <polygon class="head" points="907.8,493 908.1,500.9 901.6,497.9"/>
+  <line class="cpl" x1="515.1" y1="137.1" x2="515.1" y2="161.1"/>
+  <polygon class="cpl-head" points="515.1,161.1 511.5,154.1 518.7,154.1"/>
+  <circle class="tail-d" cx="515.1" cy="137.1" r="3.6"/>
+  <text class="clbl" x="522.1" y="153.1">text, found</text>
+  <line class="cpl" x1="515.1" y1="199.6" x2="515.1" y2="175.6"/>
+  <polygon class="cpl-head" points="515.1,175.6 518.7,182.6 511.5,182.6"/>
+  <circle class="tail-d" cx="515.1" cy="199.6" r="3.6"/>
+  <text class="clbl" x="522.1" y="191.6">root, found</text>
+  <line class="cpl" x1="288.6" y1="332.6" x2="266.4" y2="341.7"/>
+  <polygon class="cpl-head" points="266.4,341.7 271.5,335.7 274.3,342.4"/>
+  <circle class="tail-d" cx="288.6" cy="332.6" r="3.6"/>
+  <text class="clbl" x="259.4" y="341.1" text-anchor="end">trimmed, separator</text>
+  <line class="cpl" x1="172.9" y1="380.2" x2="195.1" y2="371.1"/>
+  <polygon class="cpl-head" points="195.1,371.1 190,377.1 187.3,370.4"/>
+  <circle class="tail-d" cx="172.9" cy="380.2" r="3.6"/>
+  <text class="clbl" x="165.9" y="379.6" text-anchor="end">parts</text>
+  <line class="cpl" x1="344.5" y1="384" x2="324.6" y2="397.4"/>
+  <polygon class="cpl-head" points="324.6,397.4 328.4,390.5 332.5,396.5"/>
+  <circle class="tail-d" cx="344.5" cy="384" r="3.6"/>
+  <text class="clbl" x="351.5" y="394.7">part, checks</text>
+  <line class="cpl" x1="284.8" y1="424.4" x2="304.6" y2="411"/>
+  <polygon class="cpl-head" points="304.6,411 300.9,417.9 296.8,411.9"/>
+  <circle class="tail-d" cx="284.8" cy="424.4" r="3.6"/>
+  <text class="clbl" x="311.6" y="421.7">node, checks</text>
+  <line class="cpl" x1="478.7" y1="345" x2="467.1" y2="365.9"/>
+  <polygon class="cpl-head" points="467.1,365.9 467.4,358.1 473.7,361.6"/>
+  <circle class="tail-d" cx="478.7" cy="345" r="3.6"/>
+  <text class="clbl" x="485.7" y="359.5">trimmed</text>
+  <line class="cpl" x1="445.8" y1="404.4" x2="457.4" y2="383.5"/>
+  <polygon class="cpl-head" points="457.4,383.5 457.2,391.3 450.9,387.8"/>
+  <circle class="tail-d" cx="445.8" cy="404.4" r="3.6"/>
+  <text class="clbl" x="464.4" y="398">scanned</text>
+  <line class="cpl" x1="572.9" y1="340.1" x2="584.4" y2="361.2"/>
+  <polygon class="cpl-head" points="584.4,361.2 577.9,356.7 584.2,353.3"/>
+  <circle class="tail-d" cx="572.9" cy="340.1" r="3.6"/>
+  <text class="clbl" x="591.4" y="354.6">trimmed or inner</text>
+  <line class="cpl" x1="603.3" y1="395.8" x2="591.8" y2="374.7"/>
+  <polygon class="cpl-head" points="591.8,374.7 598.3,379.2 592,382.6"/>
+  <circle class="tail-f" cx="603.3" cy="395.8" r="3.6"/>
+  <text class="clbl" x="610.3" y="389.3">wrapped</text>
+  <line class="cpl" x1="715.6" y1="332.6" x2="737.8" y2="341.7"/>
+  <polygon class="cpl-head" points="737.8,341.7 729.9,342.4 732.7,335.7"/>
+  <circle class="tail-d" cx="715.6" cy="332.6" r="3.6"/>
+  <text class="clbl" x="744.8" y="341.1">trimmed</text>
+  <line class="cpl" x1="831.3" y1="380.2" x2="809.1" y2="371.1"/>
+  <polygon class="cpl-head" points="809.1,371.1 816.9,370.4 814.2,377.1"/>
+  <circle class="tail-d" cx="831.3" cy="380.2" r="3.6"/>
+  <text class="clbl" x="838.3" y="379.6">check</text>
+  <line class="cpl" x1="99.1" y1="537.1" x2="99.1" y2="561.1"/>
+  <polygon class="cpl-head" points="99.1,561.1 95.5,554.1 102.7,554.1"/>
+  <circle class="tail-d" cx="99.1" cy="537.1" r="3.6"/>
+  <text class="clbl" x="106.1" y="553.1">text</text>
+  <line class="cpl" x1="99.1" y1="599.6" x2="99.1" y2="575.6"/>
+  <polygon class="cpl-head" points="99.1,575.6 102.7,582.6 95.5,582.6"/>
+  <circle class="tail-d" cx="99.1" cy="599.6" r="3.6"/>
+  <text class="clbl" x="106.1" y="591.6">scanned</text>
+  <line class="cpl" x1="620.1" y1="537.1" x2="620.1" y2="561.1"/>
+  <polygon class="cpl-head" points="620.1,561.1 616.5,554.1 623.7,554.1"/>
+  <circle class="tail-d" cx="620.1" cy="537.1" r="3.6"/>
+  <text class="clbl" x="627.1" y="553.1">text, 0</text>
+  <line class="cpl" x1="620.1" y1="599.6" x2="620.1" y2="575.6"/>
+  <polygon class="cpl-head" points="620.1,575.6 623.7,582.6 616.5,582.6"/>
+  <circle class="tail-d" cx="620.1" cy="599.6" r="3.6"/>
+  <text class="clbl" x="627.1" y="591.6">close</text>
+  <line class="cpl" x1="861.4" y1="532.4" x2="849.9" y2="553.4"/>
+  <polygon class="cpl-head" points="849.9,553.4 850.1,545.6 856.4,549"/>
+  <circle class="tail-d" cx="861.4" cy="532.4" r="3.6"/>
+  <text class="clbl" x="842.9" y="546.9" text-anchor="end">body</text>
+  <line class="cpl" x1="828.9" y1="591.9" x2="840.4" y2="570.9"/>
+  <polygon class="cpl-head" points="840.4,570.9 840.2,578.8 833.9,575.3"/>
+  <circle class="tail-f" cx="828.9" cy="591.9" r="3.6"/>
+  <text class="clbl" x="821.9" y="585.4" text-anchor="end">wrapped</text>
+  <line class="cpl" x1="974.7" y1="532.4" x2="986.2" y2="553.4"/>
+  <polygon class="cpl-head" points="986.2,553.4 979.7,549 986,545.6"/>
+  <circle class="tail-d" cx="974.7" cy="532.4" r="3.6"/>
+  <text class="clbl" x="993.2" y="546.9">body</text>
+  <line class="cpl" x1="1007.3" y1="591.9" x2="995.7" y2="570.9"/>
+  <polygon class="cpl-head" points="995.7,570.9 1002.3,575.3 995.9,578.8"/>
+  <circle class="tail-d" cx="1007.3" cy="591.9" r="3.6"/>
+  <text class="clbl" x="1014.3" y="585.4">operator</text>
+  <line class="cpl" x1="835.9" y1="737.1" x2="835.9" y2="761.1"/>
+  <polygon class="cpl-head" points="835.9,761.1 832.3,754.1 839.5,754.1"/>
+  <circle class="tail-d" cx="835.9" cy="737.1" r="3.6"/>
+  <text class="clbl" x="842.9" y="753.1">text, 0</text>
+  <line class="cpl" x1="835.9" y1="799.6" x2="835.9" y2="775.6"/>
+  <polygon class="cpl-head" points="835.9,775.6 839.5,782.6 832.3,782.6"/>
+  <circle class="tail-d" cx="835.9" cy="799.6" r="3.6"/>
+  <text class="clbl" x="842.9" y="791.6">close</text>
+  <line class="cpl" x1="1026.2" y1="737.1" x2="1026.2" y2="761.1"/>
+  <polygon class="cpl-head" points="1026.2,761.1 1022.6,754.1 1029.8,754.1"/>
+  <circle class="tail-d" cx="1026.2" cy="737.1" r="3.6"/>
+  <text class="clbl" x="1033.2" y="753.1">body</text>
+  <line class="cpl" x1="1026.2" y1="799.6" x2="1026.2" y2="775.6"/>
+  <polygon class="cpl-head" points="1026.2,775.6 1029.8,782.6 1022.6,782.6"/>
+  <circle class="tail-d" cx="1026.2" cy="799.6" r="3.6"/>
+  <text class="clbl" x="1033.2" y="791.6">scanned</text>
+  <rect class="box" x="441" y="30" width="122.2" height="46"/>
+  <text class="lbl" x="502.1" y="50" text-anchor="middle">new Condition</text>
+  <text class="sub" x="502.1" y="65" text-anchor="middle">constructor</text>
+  <text class="note" x="502.1" y="21" text-anchor="middle">from Chart 1</text>
+  <rect class="box" x="446.1" y="230" width="112" height="46"/>
+  <polygon class="rep" points="446.1,230 458.1,230 446.1,242"/>
+  <text class="lbl" x="502.1" y="257" text-anchor="middle">parse</text>
+  <rect class="box" x="25" y="430" width="122.2" height="46"/>
+  <text class="lbl" x="86.1" y="457" text-anchor="middle">splitTopLevel</text>
+  <rect class="box" x="28.6" y="630" width="115" height="46"/>
+  <polygon class="rep" points="28.6,630 40.6,630 28.6,642"/>
+  <text class="lbl" x="86.1" y="657" text-anchor="middle">maskLiterals</text>
+  <rect class="box" x="197.2" y="430" width="112" height="46"/>
+  <polygon class="rep" points="197.2,430 209.2,430 197.2,442"/>
+  <text class="lbl" x="253.2" y="450" text-anchor="middle">parse</text>
+  <text class="sub" x="253.2" y="465" text-anchor="middle">calls itself</text>
+  <rect class="box" x="359.2" y="430" width="115" height="46"/>
+  <polygon class="rep" points="359.2,430 371.2,430 359.2,442"/>
+  <text class="lbl" x="416.8" y="457" text-anchor="middle">maskLiterals</text>
+  <rect class="box" x="524.2" y="430" width="165.8" height="46"/>
+  <polygon class="rep" points="524.2,430 536.2,430 524.2,442"/>
+  <text class="lbl" x="607.1" y="457" text-anchor="middle">isWrappedInBrackets</text>
+  <rect class="box" x="527.9" y="630" width="158.5" height="46"/>
+  <polygon class="rep" points="527.9,630 539.9,630 527.9,642"/>
+  <text class="lbl" x="607.1" y="657" text-anchor="middle">findClosingBracket</text>
+  <rect class="box" x="862.1" y="430" width="112" height="46"/>
+  <text class="lbl" x="918.1" y="457" text-anchor="middle">parseCheck</text>
+  <rect class="box" x="740" y="630" width="165.8" height="46"/>
+  <polygon class="rep" points="740,630 752,630 740,642"/>
+  <text class="lbl" x="822.9" y="657" text-anchor="middle">isWrappedInBrackets</text>
+  <rect class="box" x="743.6" y="830" width="158.5" height="46"/>
+  <polygon class="rep" points="743.6,830 755.6,830 743.6,842"/>
+  <text class="lbl" x="822.9" y="857" text-anchor="middle">findClosingBracket</text>
+  <rect class="box" x="955.8" y="630" width="115" height="46"/>
+  <text class="lbl" x="1013.2" y="657" text-anchor="middle">findOperator</text>
+  <rect class="box" x="955.8" y="830" width="115" height="46"/>
+  <polygon class="rep" points="955.8,830 967.8,830 955.8,842"/>
+  <text class="lbl" x="1013.2" y="857" text-anchor="middle">maskLiterals</text>
+</svg>
+  </div>
+  <figcaption><p><code>parse</code> splits the text at each <code>||</code> outside brackets, then at each <code>&amp;&amp;</code>, and calls itself on each part. When neither split applies, it removes the brackets around a group, or a <code>!</code> in front of one, and calls itself on what remains. Text that is a single check goes to <code>parseCheck</code>, which removes any leading <code>!</code> and wrapping brackets, then finds the comparison operator. Each check lands in the <code>checks</code> list that the constructor passed down, in left-to-right order.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-3">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">3</span></div>
+    <div><span class="tb-label">Title</span><h3>Deciding a whole condition</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">evaluate(Map)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="7 12 1022 682" width="1022" height="682" role="img" aria-label="Structure chart 3: Trace.fillCheck calls getChecks, getText and evaluate(Map); evaluate(Map) calls evaluate(Node, Map), which calls Map.get, Answer.of, itself and Answer.negate." style="--w:1022">
+  <line class="call" x1="357.2" y1="76" x2="82.7" y2="229"/>
+  <polygon class="head" points="81,230 86.7,221.7 91.1,229.5"/>
+  <line class="call" x1="379.2" y1="76" x2="244.3" y2="228.5"/>
+  <polygon class="head" points="243,230 245.6,220.3 252.3,226.2"/>
+  <line class="call" x1="401.2" y1="76" x2="675.7" y2="229"/>
+  <polygon class="head" points="677.4,230 667.4,229.5 671.8,221.7"/>
+  <polygon class="diamond" points="408.2,72.9 414.2,79.9 408.2,86.9 402.2,79.9"/>
+  <line class="call" x1="677.4" y1="276" x2="677.4" y2="428"/>
+  <polygon class="head" points="677.4,430 672.9,421 681.9,421"/>
+  <line class="call" x1="644.4" y1="476" x2="406.7" y2="628.9"/>
+  <polygon class="head" points="405,630 410.1,621.3 415,628.9"/>
+  <polygon class="diamond" points="637.7,473.3 643.7,480.3 637.7,487.3 631.7,480.3"/>
+  <line class="call" x1="666.4" y1="476" x2="568.1" y2="628.3"/>
+  <polygon class="head" points="567,630 568.1,620 575.7,624.9"/>
+  <polygon class="diamond" points="662.1,475.7 668.1,482.7 662.1,489.7 656.1,482.7"/>
+  <line class="call" x1="688.4" y1="476" x2="755.1" y2="628.2"/>
+  <polygon class="head" points="755.9,630 748.1,623.6 756.4,620"/>
+  <polygon class="diamond" points="691.6,476.3 697.6,483.3 691.6,490.3 685.6,483.3"/>
+  <line class="call" x1="710.4" y1="476" x2="948.2" y2="628.9"/>
+  <polygon class="head" points="949.9,630 939.9,628.9 944.7,621.3"/>
+  <polygon class="diamond" points="717.2,473.3 723.2,480.3 717.2,487.3 711.2,480.3"/>
+  <path class="loop" d="M684.7,493 Q700.7,528 716.7,493"/>
+  <polygon class="head" points="716.7,493 717.1,500.9 710.5,497.9"/>
+  <line class="cpl" x1="174.7" y1="162.9" x2="195.6" y2="151.2"/>
+  <polygon class="cpl-head" points="195.6,151.2 191.3,157.8 187.8,151.5"/>
+  <circle class="tail-d" cx="174.7" cy="162.9" r="3.6"/>
+  <text class="clbl" x="167.7" y="161" text-anchor="end">checks</text>
+  <line class="cpl" x1="279.8" y1="168.8" x2="295.7" y2="150.8"/>
+  <polygon class="cpl-head" points="295.7,150.8 293.8,158.4 288.4,153.7"/>
+  <circle class="tail-d" cx="279.8" cy="168.8" r="3.6"/>
+  <text class="clbl" x="272.8" y="163.8" text-anchor="end">text</text>
+  <line class="cpl" x1="528.3" y1="132" x2="549.2" y2="143.6"/>
+  <polygon class="cpl-head" points="549.2,143.6 541.4,143.4 544.9,137.1"/>
+  <circle class="tail-d" cx="528.3" cy="132" r="3.6"/>
+  <text class="clbl" x="556.2" y="141.8">answers</text>
+  <line class="cpl" x1="618.3" y1="182.1" x2="597.3" y2="170.5"/>
+  <polygon class="cpl-head" points="597.3,170.5 605.2,170.7 601.7,177"/>
+  <circle class="tail-d" cx="618.3" cy="182.1" r="3.6"/>
+  <text class="clbl" x="625.3" y="180.3">whole</text>
+  <line class="cpl" x1="690.4" y1="337.1" x2="690.4" y2="361.1"/>
+  <polygon class="cpl-head" points="690.4,361.1 686.8,354.1 694,354.1"/>
+  <circle class="tail-d" cx="690.4" cy="337.1" r="3.6"/>
+  <text class="clbl" x="697.4" y="353.1">root, answers</text>
+  <line class="cpl" x1="690.4" y1="399.6" x2="690.4" y2="375.6"/>
+  <polygon class="cpl-head" points="690.4,375.6 694,382.6 686.8,382.6"/>
+  <circle class="tail-d" cx="690.4" cy="399.6" r="3.6"/>
+  <text class="clbl" x="697.4" y="391.6">answer</text>
+  <line class="cpl" x1="533.8" y1="531.7" x2="513.6" y2="544.7"/>
+  <polygon class="cpl-head" points="513.6,544.7 517.5,537.9 521.4,543.9"/>
+  <circle class="tail-d" cx="533.8" cy="531.7" r="3.6"/>
+  <text class="clbl" x="506.6" y="542.2" text-anchor="end">index</text>
+  <line class="cpl" x1="453.7" y1="583.2" x2="473.9" y2="570.2"/>
+  <polygon class="cpl-head" points="473.9,570.2 470,577 466.1,571"/>
+  <circle class="tail-d" cx="453.7" cy="583.2" r="3.6"/>
+  <text class="clbl" x="446.7" y="580.7" text-anchor="end">answer or null</text>
+  <line class="cpl" x1="612.3" y1="535.9" x2="599.3" y2="556"/>
+  <polygon class="cpl-head" points="599.3,556 600.1,548.2 606.1,552.1"/>
+  <circle class="tail-d" cx="612.3" cy="535.9" r="3.6"/>
+  <text class="clbl" x="592.3" y="549.9" text-anchor="end">answer</text>
+  <line class="cpl" x1="564.5" y1="609.9" x2="577.5" y2="589.8"/>
+  <polygon class="cpl-head" points="577.5,589.8 576.7,597.6 570.7,593.7"/>
+  <circle class="tail-d" cx="564.5" cy="609.9" r="3.6"/>
+  <text class="clbl" x="557.5" y="603.8" text-anchor="end">TRUE or FALSE</text>
+  <line class="cpl" x1="712.2" y1="562.6" x2="721.8" y2="584.6"/>
+  <polygon class="cpl-head" points="721.8,584.6 715.7,579.6 722.3,576.8"/>
+  <circle class="tail-d" cx="712.2" cy="562.6" r="3.6"/>
+  <text class="clbl" x="705.2" y="577.6" text-anchor="end">child, answers</text>
+  <line class="cpl" x1="737" y1="619.3" x2="727.4" y2="597.3"/>
+  <polygon class="cpl-head" points="727.4,597.3 733.5,602.2 726.9,605.1"/>
+  <circle class="tail-d" cx="737" cy="619.3" r="3.6"/>
+  <text class="clbl" x="720.4" y="612.3" text-anchor="end">answer</text>
+  <line class="cpl" x1="871.2" y1="564" x2="851" y2="551"/>
+  <polygon class="cpl-head" points="851,551 858.9,551.7 855,557.8"/>
+  <circle class="tail-d" cx="871.2" cy="564" r="3.6"/>
+  <text class="clbl" x="878.2" y="561.5">flipped answer</text>
+  <rect class="box ext" x="323.2" y="30" width="112" height="46"/>
+  <text class="lbl ext" x="379.2" y="50" text-anchor="middle">fillCheck</text>
+  <text class="sub" x="379.2" y="65" text-anchor="middle">Trace</text>
+  <rect class="box" x="25" y="230" width="112" height="46"/>
+  <text class="lbl" x="81" y="257" text-anchor="middle">getChecks</text>
+  <rect class="box" x="187" y="230" width="112" height="46"/>
+  <text class="lbl" x="243" y="257" text-anchor="middle">getText</text>
+  <rect class="box" x="616.3" y="230" width="122.2" height="46"/>
+  <text class="lbl" x="677.4" y="257" text-anchor="middle">evaluate(Map)</text>
+  <rect class="box" x="594.6" y="430" width="165.8" height="46"/>
+  <polygon class="rep" points="594.6,430 606.6,430 594.6,442"/>
+  <text class="lbl" x="677.4" y="457" text-anchor="middle">evaluate(Node, Map)</text>
+  <rect class="box" x="349" y="630" width="112" height="46"/>
+  <line class="libbar" x1="356" y1="630" x2="356" y2="676"/>
+  <line class="libbar" x1="454" y1="630" x2="454" y2="676"/>
+  <text class="lbl" x="405" y="657" text-anchor="middle">Map.get</text>
+  <rect class="box" x="511" y="630" width="112" height="46"/>
+  <text class="lbl" x="567" y="657" text-anchor="middle">Answer.of</text>
+  <rect class="box" x="673" y="630" width="165.8" height="46"/>
+  <polygon class="rep" points="673,630 685,630 673,642"/>
+  <text class="lbl" x="755.9" y="650" text-anchor="middle">evaluate(Node, Map)</text>
+  <text class="sub" x="755.9" y="665" text-anchor="middle">calls itself</text>
+  <rect class="box" x="888.8" y="630" width="122.2" height="46"/>
+  <text class="lbl" x="949.9" y="657" text-anchor="middle">Answer.negate</text>
+</svg>
+  </div>
+  <figcaption><p>Trace asks for the checks and the text of a condition to build its columns. When the condition has two or more checks, it passes the answers so far to <code>evaluate</code>, which walks the tree that <code>parse</code> built. A leaf looks its answer up in the map, a <code>Not</code> flips the answer beneath it, and an <code>And</code> or <code>Or</code> calls itself on each part until one part settles the result.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-4">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">4</span></div>
+    <div><span class="tb-label">Title</span><h3>Answering one check</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">Check.eval(long, long)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="7 12 354.3 482" width="354.3" height="482" role="img" aria-label="Structure chart 4: Probe.check gets one check through Probe.Checked.getCheck, which calls getChecks, then calls Check.eval, which calls Operator.eval." style="--w:354.3">
+  <line class="call" x1="153.6" y1="76" x2="81.9" y2="228.2"/>
+  <polygon class="head" points="81,230 80.8,219.9 88.9,223.8"/>
+  <line class="call" x1="175.6" y1="76" x2="247.3" y2="228.2"/>
+  <polygon class="head" points="248.1,230 240.2,223.8 248.4,219.9"/>
+  <line class="call" x1="81" y1="276" x2="81" y2="428"/>
+  <polygon class="head" points="81,430 76.5,421 85.5,421"/>
+  <line class="call" x1="248.1" y1="276" x2="248.1" y2="428"/>
+  <polygon class="head" points="248.1,430 243.6,421 252.6,421"/>
+  <line class="cpl" x1="93.2" y1="173.7" x2="103.4" y2="152"/>
+  <polygon class="cpl-head" points="103.4,152 103.7,159.9 97.1,156.8"/>
+  <circle class="tail-d" cx="93.2" cy="173.7" r="3.6"/>
+  <text class="clbl" x="86.2" y="166.9" text-anchor="end">check</text>
+  <line class="cpl" x1="216.7" y1="132.8" x2="226.9" y2="154.5"/>
+  <polygon class="cpl-head" points="226.9,154.5 220.7,149.7 227.2,146.6"/>
+  <circle class="tail-d" cx="216.7" cy="132.8" r="3.6"/>
+  <text class="clbl" x="233.9" y="147.6">left, right</text>
+  <line class="cpl" x1="245" y1="193" x2="234.8" y2="171.3"/>
+  <polygon class="cpl-head" points="234.8,171.3 241.1,176.1 234.5,179.1"/>
+  <circle class="tail-d" cx="245" cy="193" r="3.6"/>
+  <text class="clbl" x="252" y="186.1">result</text>
+  <line class="cpl" x1="94" y1="380.4" x2="94" y2="356.4"/>
+  <polygon class="cpl-head" points="94,356.4 97.6,363.4 90.4,363.4"/>
+  <circle class="tail-d" cx="94" cy="380.4" r="3.6"/>
+  <text class="clbl" x="101" y="372.4">checks</text>
+  <line class="cpl" x1="261.1" y1="337.1" x2="261.1" y2="361.1"/>
+  <polygon class="cpl-head" points="261.1,361.1 257.5,354.1 264.7,354.1"/>
+  <circle class="tail-d" cx="261.1" cy="337.1" r="3.6"/>
+  <text class="clbl" x="268.1" y="353.1">left, right</text>
+  <line class="cpl" x1="261.1" y1="399.6" x2="261.1" y2="375.6"/>
+  <polygon class="cpl-head" points="261.1,375.6 264.7,382.6 257.5,382.6"/>
+  <circle class="tail-d" cx="261.1" cy="399.6" r="3.6"/>
+  <text class="clbl" x="268.1" y="391.6">result</text>
+  <rect class="box ext" x="108.6" y="30" width="112" height="46"/>
+  <text class="lbl ext" x="164.6" y="50" text-anchor="middle">check</text>
+  <text class="sub" x="164.6" y="65" text-anchor="middle">Probe</text>
+  <rect class="box ext" x="25" y="230" width="112" height="46"/>
+  <text class="lbl ext" x="81" y="250" text-anchor="middle">getCheck</text>
+  <text class="sub" x="81" y="265" text-anchor="middle">Probe.Checked</text>
+  <rect class="box" x="25" y="430" width="112" height="46"/>
+  <text class="lbl" x="81" y="457" text-anchor="middle">getChecks</text>
+  <rect class="box" x="192.1" y="230" width="112" height="46"/>
+  <text class="lbl" x="248.1" y="257" text-anchor="middle">Check.eval</text>
+  <rect class="box" x="187" y="430" width="122.2" height="46"/>
+  <text class="lbl" x="248.1" y="457" text-anchor="middle">Operator.eval</text>
+</svg>
+  </div>
+  <figcaption><p>Probe answers one check while the student’s method runs. It fetches the check by its index through <code>Probe.Checked</code>, then passes the two values being compared to <code>Check.eval</code>. That compares them with the check’s operator and flips the result when the check is negated.</p></figcaption>
+</figure>
+</section>
+
+<section class="stack-lg" aria-labelledby="fan-h">
+  <div class="stack prose">
+    <h2 id="fan-h">Fan-in and fan-out</h2>
+    <p><em>Fan-in</em> is the number of modules that call a module. <em>Fan-out</em> is the number of modules it calls.
+    Yourdon and Constantine want high fan-in for small shared helpers, since it means one piece of code serves many
+    callers, and moderate fan-out, since a module that calls too many others is hard to follow. <code>parseLine</code>
+    calls six modules and <code>parse</code> calls five, both within the usual rule of thumb of about seven.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Module</th><th scope="col">In</th><th scope="col">Called by</th><th scope="col">Out</th><th scope="col">Calls</th></tr></thead>
+      <tbody>
+<tr><td><span class="mono">parseLine</span></td><td class="num">1</td><td><span class="mono">SourceCode.findConditionsOn</span></td><td class="num">6</td><td><span class="mono">stripComment, maskLiterals, Matcher.find, findClosingBracket, splitTopLevel, new Condition</span></td></tr>
+<tr><td><span class="mono">new Condition</span></td><td class="num">1</td><td><span class="mono">parseLine</span></td><td class="num">2</td><td><span class="mono">parse, List.copyOf</span></td></tr>
+<tr><td><span class="mono">parse</span></td><td class="num">2</td><td><span class="mono">new Condition, parse</span></td><td class="num">5</td><td><span class="mono">splitTopLevel, parse, maskLiterals, isWrappedInBrackets, parseCheck</span></td></tr>
+<tr><td><span class="mono">parseCheck</span></td><td class="num">1</td><td><span class="mono">parse</span></td><td class="num">2</td><td><span class="mono">isWrappedInBrackets, findOperator</span></td></tr>
+<tr><td><span class="mono">findOperator</span></td><td class="num">1</td><td><span class="mono">parseCheck</span></td><td class="num">1</td><td><span class="mono">maskLiterals</span></td></tr>
+<tr><td><span class="mono">splitTopLevel</span></td><td class="num">2</td><td><span class="mono">parseLine, parse</span></td><td class="num">1</td><td><span class="mono">maskLiterals</span></td></tr>
+<tr><td><span class="mono">isWrappedInBrackets</span></td><td class="num">2</td><td><span class="mono">parse, parseCheck</span></td><td class="num">1</td><td><span class="mono">findClosingBracket</span></td></tr>
+<tr><td><span class="mono">findClosingBracket</span></td><td class="num">2</td><td><span class="mono">parseLine, isWrappedInBrackets</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr class="hi"><td><span class="mono">maskLiterals</span></td><td class="num">4</td><td><span class="mono">parseLine, splitTopLevel, parse, findOperator</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">stripComment</span></td><td class="num">1</td><td><span class="mono">parseLine</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getText</span></td><td class="num">1</td><td><span class="mono">Trace.fillCheck</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getChecks</span></td><td class="num">2</td><td><span class="mono">Trace.fillCheck, Probe.Checked.getCheck</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">evaluate(Map)</span></td><td class="num">1</td><td><span class="mono">Trace.fillCheck</span></td><td class="num">1</td><td><span class="mono">evaluate(Node, Map)</span></td></tr>
+<tr><td><span class="mono">evaluate(Node, Map)</span></td><td class="num">2</td><td><span class="mono">evaluate(Map), evaluate(Node, Map)</span></td><td class="num">4</td><td><span class="mono">evaluate(Node, Map), Map.get, Answer.of, Answer.negate</span></td></tr>
+<tr><td><span class="mono">Answer.of</span></td><td class="num">1</td><td><span class="mono">evaluate(Node, Map)</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">Answer.negate</span></td><td class="num">1</td><td><span class="mono">evaluate(Node, Map)</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">Check.eval</span></td><td class="num">1</td><td><span class="mono">Probe.check</span></td><td class="num">1</td><td><span class="mono">Operator.eval</span></td></tr>
+<tr><td><span class="mono">Operator.eval</span></td><td class="num">1</td><td><span class="mono">Check.eval</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="stack-lg" aria-labelledby="notes-h">
+  <div class="stack prose">
+    <h2 id="notes-h">What the charts say about the design</h2>
+    <p>Structured Design judges a design by two measures. <em>Coupling</em> is how much one module depends on another,
+    and the couples on a chart are its visible part: fewer and simpler couples mean looser coupling. <em>Cohesion</em> is
+    how closely the statements inside one module serve a single job. A chart shows coupling directly, so these notes
+    read the charts that way.</p>
+  </div>
+  <div class="notes">
+<article class="note-item"><h3>Every flag travels upward</h3><p>The charts carry only two flags: <code>found</code> from <code>Matcher.find</code>, and <code>wrapped</code> from <code>isWrappedInBrackets</code>. Both report a fact back to the caller. No module receives a flag that tells it what to do, which Yourdon and Constantine call control coupling and rank below data coupling. The separator that <code>parse</code> passes to <code>splitTopLevel</code> looks like a switch, but <code>splitTopLevel</code> treats <code>||</code>, <code>&amp;&amp;</code> and <code>;</code> the same way, so it is data. <code>Answer.of</code> also takes a <code>boolean</code>, but it converts that value rather than being steered by it, so the chart draws it as data too.</p></article>
+<article class="note-item"><h3>Two values double as flags</h3><p><code>findClosingBracket</code> returns <code>close</code>, which is either an index or -1 when the line ends first. <code>Map.get</code> returns either an answer or <code>null</code> when the check has yet to run. A value that also carries a yes-or-no signal is what Yourdon and Constantine call hybrid coupling. The chart can only draw it as plain data, so the reader has to learn the -1 and <code>null</code> rules from the code. Both follow habits Java programmers already know (<code>String.indexOf</code> returns -1 the same way), so they are worth leaving as they are.</p></article>
+<article class="note-item"><h3>The checks list goes down and comes back up</h3><p>The constructor hands <code>parse</code> an empty list, and <code>parse</code> adds a check to it each time it reaches a single check. Chart 2 shows the cost: every call of <code>parse</code> passes the list on, though only the last step writes to it, and <code>parse</code> has two outputs, one returned and one written into a list it was given. The shared list is what numbers the checks from left to right across the recursion, so the trade is a fair one.</p></article>
+<article class="note-item"><h3>Three modules repeat the literal scan</h3><p><code>stripComment</code>, <code>findClosingBracket</code> and <code>maskLiterals</code> each keep their own record of the open quote and skip the character after a backslash. <code>maskLiterals</code> already returns text of the same length with every literal blanked, so <code>stripComment</code> could mask the line and look for <code>//</code> in the result, and <code>findClosingBracket</code> could expect masked text from its callers. Yourdon and Constantine call this factoring. It would raise the fan-in of <code>maskLiterals</code> and leave one copy of the escape rule to keep correct instead of three.</p></article>
+<article class="note-item"><h3>evaluate(Node, Map) is a transaction centre</h3><p>A transaction centre is Yourdon and Constantine’s name for a module that looks at the kind of its input and passes it to one of several actions. The <code>switch</code> over <code>Leaf</code>, <code>Not</code>, <code>And</code> and <code>Or</code> is exactly that, which is why every call beneath it on Chart 3 has a diamond. Because <code>Node</code> is a sealed interface, the compiler confirms the <code>switch</code> covers all four kinds.</p></article>
+  </div>
+</section>
+
+<footer>
+  Drawn from <span class="mono">src/main/java/com/slinky/katas/internal/tracing/Condition.java</span>. Callers come
+  from <span class="mono">src/main</span> only; the unit tests are left out.
+</footer>
+
+</div>
+
+</body></html>

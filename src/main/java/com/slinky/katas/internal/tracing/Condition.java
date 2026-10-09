@@ -132,7 +132,6 @@ public final class Condition {
     // ========================================================================================== \\
     //                                           Nested                                           \\
     // ========================================================================================== \\
-
     /**
      * The comparison that one check makes between the value on its left and the value on its right.
      */
@@ -276,11 +275,11 @@ public final class Condition {
     // ========================================================================================== \\
     //                                           Fields                                           \\
     // ========================================================================================== \\
-    private final String      text;
+    private final String text;
     // The checks in the order Java runs them, copied from the list that parse fills
     private final List<Check> checks;
     // The tree that records how &&, || and ! join the checks, with a Leaf for each check
-    private final Node        root;
+    private final Node root;
 
     // ========================================================================================== \\
     //                                       Constructor(s)                                       \\
@@ -438,7 +437,7 @@ public final class Condition {
         var depth   = 0;   // the number of brackets open at index i
         var start   = 0;   // the index at which the current part begins
         for (var i = 0; i < text.length(); i++) {
-            var c               = scanned.charAt(i);
+            var c = scanned.charAt(i);
             var outsideBrackets = depth == 0;
             if (c == '(') {
                 depth++;
@@ -688,8 +687,8 @@ public final class Condition {
      *     <li>A {@code Leaf} returns the answer of its check from the map, or {@code UNDECIDED} where the map
      *     has none.</li>
      *     <li>A {@code Not} returns the answer of its inner node, flipped by {@link Answer#negate()}.</li>
-     *     <li>An {@code And} returns the answer of its first part that is not {@code TRUE}, and {@code TRUE} when
-     *     every part is {@code TRUE}.</li>
+     *     <li>An {@code And} returns the answer of its first part that is not {@code TRUE}, and {@code TRUE}
+     *     when every part is {@code TRUE}.</li>
      *     <li>An {@code Or} returns the answer of its first part that is not {@code FALSE}, and {@code FALSE}
      *     when every part is {@code FALSE}.</li>
      * </ul>
@@ -731,7 +730,6 @@ public final class Condition {
     // ========================================================================================== \\
     //                                       Helper Classes                                       \\
     // ========================================================================================== \\
-
     /**
      * One node in the tree that records how the checks of a condition combine.
      */

@@ -1,0 +1,590 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Probe.java Structure Charts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root {
+  /* Layout: one reading column for prose (about 68ch); chart sheets break out to the full 1200px frame */
+  --paper: #edf1ee;
+  --sheet: #fafcfa;
+  --grid: #e6ece8;
+  --ink: #16201c;
+  --muted: #5b6a64;
+  --rule: #c6d1cb;
+  --box: #ffffff;
+  --accent: #1d7a52;
+  --accent-ink: #145f3f;
+  --code-bg: #e3eae6;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1412; --sheet: #131b18; --grid: #19231f; --ink: #dce6e1; --muted: #93a59e;
+    --rule: #2a3732; --box: #18221e; --accent: #5ec796; --accent-ink: #84dcb0; --code-bg: #1b2622;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1412; --sheet: #131b18; --grid: #19231f; --ink: #dce6e1; --muted: #93a59e;
+  --rule: #2a3732; --box: #18221e; --accent: #5ec796; --accent-ink: #84dcb0; --code-bg: #1b2622;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.frame { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 64px; display: grid; gap: 56px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 4.6vw, 3.1rem); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 1.6rem; font-weight: 600; }
+h3 { font-size: 1.2rem; font-weight: 600; }
+p { margin: 0; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.05em 0.35em; border-radius: 3px; }
+pre {
+  margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5;
+  background: var(--code-bg); padding: 10px 12px; border-radius: 4px; overflow-x: auto; white-space: pre;
+}
+.eyebrow {
+  font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500;
+}
+.stack { display: grid; gap: 14px; }
+.stack-lg { display: grid; gap: 24px; }
+
+/* Masthead */
+.masthead { display: grid; gap: 16px; border-bottom: 2px solid var(--ink); padding-bottom: 28px; }
+.masthead .lede { font-size: 1.1rem; max-width: 64ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 28px; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+
+/* Key */
+.key { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 0 40px; }
+.key-item { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px 16px; padding-block: 18px; border-top: 1px solid var(--rule); align-items: start; }
+.key-item pre { grid-column: 1 / -1; }
+.key-item svg { width: 112px; height: auto; display: block; }
+.key-text { display: grid; gap: 8px; min-width: 0; }
+.key-text strong { font-family: var(--display); font-size: 1.02rem; font-weight: 600; }
+.key-text p { font-size: 0.94rem; }
+.rules { display: grid; gap: 10px; font-size: 0.94rem; color: var(--muted); max-width: 72ch; }
+
+/* Sheets */
+.sheet { margin: 0; background-color: var(--sheet); border: 1px solid var(--rule); }
+.sheet-body {
+  overflow-x: auto; padding-block: 20px; padding-inline: 12px;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.sheet-body svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.titleblock {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: stretch;
+  border-bottom: 1px solid var(--rule); font-family: var(--display);
+}
+.titleblock > div { padding: 10px 16px; display: grid; align-content: center; gap: 2px; min-width: 0; }
+.titleblock > div + div { border-left: 1px solid var(--rule); }
+.tb-label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.tb-num { font-size: 1.5rem; font-weight: 600; line-height: 1; }
+.tb-entry { font-family: var(--mono); font-size: 0.82rem; }
+.sheet figcaption { padding: 14px 16px 18px; border-top: 1px solid var(--rule); font-size: 0.95rem; }
+.sheet figcaption p { max-width: 80ch; }
+
+/* Structure chart drawing */
+.sc .box { fill: var(--box); stroke: var(--ink); stroke-width: 1.4; }
+.sc .box.ext { fill: var(--sheet); stroke: var(--muted); stroke-dasharray: 5 4; }
+.sc .libbar { stroke: var(--ink); stroke-width: 1.2; }
+.sc .lbl { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+.sc .lbl.ext { fill: var(--muted); }
+.sc .sub { font-family: var(--body); font-size: 10px; fill: var(--muted); }
+.sc .note { font-family: var(--body); font-size: 11px; font-style: italic; fill: var(--muted); }
+.sc .call { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+.sc .head { fill: var(--ink); }
+.sc .diamond { fill: var(--box); stroke: var(--ink); stroke-width: 1.3; }
+.sc .cpl { stroke: var(--accent); stroke-width: 1.4; fill: none; }
+.sc .cpl-head { fill: var(--accent); }
+.sc .tail-d { fill: var(--sheet); stroke: var(--accent); stroke-width: 1.4; }
+.sc .tail-f { fill: var(--accent); stroke: var(--accent); stroke-width: 1.4; }
+.sc .clbl {
+  font-family: var(--mono); font-size: 11px; fill: var(--accent-ink);
+  paint-order: stroke; stroke: var(--sheet); stroke-width: 3.5px; stroke-linejoin: round;
+}
+.key-item .sc .tail-d, .key-item .sc .clbl { stroke: var(--paper); }
+.key-item .sc .tail-d { stroke: var(--accent); fill: var(--paper); }
+
+/* Table */
+.table-wrap { overflow-x: auto; border-top: 2px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; padding-right: 20px; width: 4ch; }
+td .mono { font-size: 0.86rem; }
+tr.hi td.num { color: var(--accent-ink); font-weight: 500; }
+
+/* Notes */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px 40px; }
+.note-item { display: grid; gap: 8px; align-content: start; border-top: 1px solid var(--rule); padding-top: 14px; }
+.note-item p { font-size: 0.97rem; }
+
+footer { border-top: 1px solid var(--rule); padding-top: 16px; color: var(--muted); font-size: 0.85rem; }
+
+@media (max-width: 760px) {
+  .frame { padding-inline: 16px; gap: 44px; }
+  .sheet-body svg { max-width: none; width: calc(var(--w) * 0.74px); }
+  .titleblock { grid-template-columns: auto minmax(0, 1fr); }
+  .titleblock > div:last-child { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--rule); }
+}
+</style>
+
+<div class="frame">
+
+<header class="masthead">
+  <span class="eyebrow">Structured Design &middot; com.slinky.katas.internal.tracing</span>
+  <h1>Probe.java structure charts</h1>
+  <p class="lede">A structure chart, from Yourdon and Constantine&rsquo;s Structured Design, shows which modules call
+  which, and what passes between them on each call. It leaves out the order of statements inside a module.
+  <code>Probe.java</code> has 18 modules. The reporting copy, a copy of a student&rsquo;s compiled class with a call to
+  <code>Probe</code> added at each step, calls its public methods, and no class in <code>src/main</code> builds that copy
+  yet. Each of the six charts therefore starts at an entry point of the class instead of at a caller.</p>
+  <div class="meta"><span>Probe.java v1.0.0</span><span>Last modified 2026-10-07</span><span>18 modules &middot; 6 charts</span></div>
+</header>
+
+<section class="stack-lg" aria-labelledby="key-h">
+  <div class="stack prose">
+    <h2 id="key-h">Reading the charts</h2>
+    <p>In Structured Design a <em>module</em> is a named piece of code that a caller can invoke and get control back
+    from. In Java that is a method or a constructor. Each symbol below comes with the line in <code>Probe.java</code>
+    that produces it.</p>
+  </div>
+  <div class="key">
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A plain box"><rect class="box" x="6" y="15" width="100" height="30"/><text class="lbl" x="56" y="34" text-anchor="middle" style="font-size:11px">register</text></svg><div class="key-text"><strong>Module</strong><p>One method or constructor in Probe.java. The chart shows what it does for its caller, not the statements inside it.</p></div><pre><code>static int register(Checked checked) {</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="An arrow from an upper box to a lower box"><rect class="box" x="30" y="2" width="52" height="14"/><line class="call" x1="56" y1="16" x2="56" y2="42"/><polygon class="head" points="56,44 51.5,35 60.5,35"/><rect class="box" x="30" y="44" width="52" height="14"/></svg><div class="key-text"><strong>Call</strong><p>An arrow from a module down to a module it calls. The caller is drawn above.</p></div><pre><code>add(new Enter(method));   // in enter</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="Two small arrows with hollow circles at their tails beside the call arrow, one pointing down and one up"><line class="call" x1="24" y1="2" x2="24" y2="56"/><polygon class="head" points="24,58 19.5,49 28.5,49"/><line class="cpl" x1="40" y1="8" x2="40" y2="23"/><polygon class="cpl-head" points="40,29 36.4,22 43.6,22"/><circle class="tail-d" cx="40" cy="8" r="3.6"/><text class="clbl" x="50" y="22">id</text><line class="cpl" x1="40" y1="54" x2="40" y2="39"/><polygon class="cpl-head" points="40,33 36.4,40 43.6,40"/><circle class="tail-d" cx="40" cy="54" r="3.6"/><text class="clbl" x="50" y="48">checked</text></svg><div class="key-text"><strong>Data couple</strong><p>A value passed on a call. The hollow circle marks the tail, and the arrow points the way the value travels: down into the called module, or up as its result.</p></div><pre><code>getChecked(id)   // in check(int, int, int)
+// id goes down, the check registered under it comes back up</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A small arrow with a filled circle at its tail beside the call arrow"><line class="call" x1="30" y1="2" x2="30" y2="56"/><polygon class="head" points="30,58 25.5,49 34.5,49"/><line class="cpl" x1="46" y1="44" x2="46" y2="22"/><polygon class="cpl-head" points="46,16 42.4,23 49.6,23"/><circle class="tail-f" cx="46" cy="44" r="3.6"/><text class="clbl" x="56" y="34">Runaway</text></svg><div class="key-text"><strong>Flag</strong><p>A value whose job is to steer what a module does next. The filled circle marks the tail. Every flag in Probe.java is a thrown exception, which sends the caller to its <code>catch</code> block.</p></div><pre><code>throw new Runaway(String.format("Still running after %d steps", MAX_EVENTS));   // in add</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A small diamond where the call arrow leaves the caller"><rect class="box" x="20" y="0" width="72" height="12"/><line class="call" x1="56" y1="12" x2="56" y2="56"/><polygon class="head" points="56,58 51.5,49 60.5,49"/><polygon class="diamond" points="56,13 62,20 56,27 50,20"/></svg><div class="key-text"><strong>Conditional call</strong><p>The diamond means the call happens only when a test passes.</p></div><pre><code>if (EVENTS.size() &gt;= MAX_EVENTS) {
+    throw new Runaway(String.format("Still running after %d steps", MAX_EVENTS));
+}</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a second line inside each side"><rect class="box" x="6" y="15" width="100" height="30"/><line class="libbar" x1="13" y1="15" x2="13" y2="45"/><line class="libbar" x1="99" y1="15" x2="99" y2="45"/><text class="lbl" x="56" y="34" text-anchor="middle" style="font-size:11px">List.copyOf</text></svg><div class="key-text"><strong>Library module</strong><p>A method from the JDK that Probe.java calls but does not define.</p></div><pre><code>return List.copyOf(EVENTS);   // in getEvents</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a dashed outline"><rect class="box ext" x="6" y="15" width="100" height="30"/><text class="lbl ext" x="56" y="34" text-anchor="middle" style="font-size:11px">getChecks</text></svg><div class="key-text"><strong>Module in another file</strong><p>A dashed box is a method outside Probe.java, drawn to show where a chart leaves the class.</p></div><pre><code>return condition.getChecks().get(index);   // in Checked.getCheck</code></pre></div>
+  </div>
+  <div class="rules">
+    <p>Couples take the name of the variable in the code, letting you find each one in <code>Probe.java</code>.
+    Where the code passes a value straight on without storing it in a variable, the couple takes a short name for it,
+    such as <code>Enter</code> for the record that <code>enter</code> passes to <code>add</code>, or
+    <code>answer</code> for the <code>boolean</code> that <code>Check.eval</code> returns.</p>
+    <p>A flag is drawn once, on the call where its exception starts. <code>Probe.java</code> catches none of them, and
+    each one carries on up through every caller to the code that called the entry point.</p>
+    <p>Each recording method builds an event record, such as <code>new Enter(method)</code>. Java writes the
+    constructors of those records, which are left out of the charts and the count. Calls to <code>List</code> and
+    <code>String</code> methods are left out too, apart from <code>List.copyOf</code>, which is the whole job of
+    <code>getEvents</code>. The <code>Error</code> constructor that <code>new Runaway</code> passes its message to is
+    left out as well. The private constructor <code>Probe()</code> stops other code making a <code>Probe</code> object.
+    Nothing calls it, and it is left out of the 18 modules.</p>
+  </div>
+</section>
+
+<section class="stack-lg" aria-label="Structure charts">
+
+<figure class="sheet" id="chart-1">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">1</span></div>
+    <div><span class="tb-label">Title</span><h3>Describing a check</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">Checked(String, int, Condition, int)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="36 12 534 278" width="534" height="278" role="img" aria-label="Structure chart 1: the Checked constructor calls Condition.getChecks, then Objects.checkIndex." style="--w:534">
+  <line class="call" x1="240" y1="76" x2="111.3" y2="228.5"/>
+  <polygon class="head" points="110,230 112.4,220.2 119.2,226"/>
+  <line class="call" x1="280" y1="76" x2="408.7" y2="228.5"/>
+  <polygon class="head" points="410,230 400.8,226 407.6,220.2"/>
+  <line class="cpl" x1="137.8" y1="176.9" x2="153.3" y2="158.5"/>
+  <polygon class="cpl-head" points="153.3,158.5 151.5,166.2 146,161.6"/>
+  <circle class="tail-d" cx="137.8" cy="176.9" r="3.6"/>
+  <text class="clbl" x="130.8" y="171.7" text-anchor="end">checks</text>
+  <line class="cpl" x1="327.7" y1="112.3" x2="343.2" y2="130.7"/>
+  <polygon class="cpl-head" points="343.2,130.7 335.9,127.7 341.4,123"/>
+  <circle class="tail-d" cx="327.7" cy="112.3" r="3.6"/>
+  <text class="clbl" x="350.2" y="125.5">index, size</text>
+  <line class="cpl" x1="382.2" y1="176.9" x2="366.7" y2="158.5"/>
+  <polygon class="cpl-head" points="366.7,158.5 374,161.6 368.5,166.2"/>
+  <circle class="tail-f" cx="382.2" cy="176.9" r="3.6"/>
+  <text class="clbl" x="389.2" y="171.7">IndexOutOfBoundsException</text>
+  <rect class="box" x="204" y="30" width="112" height="46"/>
+  <text class="lbl" x="260" y="50" text-anchor="middle">new Checked</text>
+  <text class="sub" x="260" y="65" text-anchor="middle">constructor</text>
+  <rect class="box ext" x="54" y="230" width="112" height="46"/>
+  <text class="lbl ext" x="110" y="250" text-anchor="middle">getChecks</text>
+  <text class="sub" x="110" y="265" text-anchor="middle">Condition</text>
+  <rect class="box" x="330" y="230" width="160" height="46"/>
+  <line class="libbar" x1="337" y1="230" x2="337" y2="276"/>
+  <line class="libbar" x1="483" y1="230" x2="483" y2="276"/>
+  <text class="lbl" x="410" y="257" text-anchor="middle">Objects.checkIndex</text>
+</svg>
+  </div>
+  <figcaption><p>A caller builds a <code>Checked</code> from a method name, a line number, a condition and an
+  index. The constructor asks <code>Condition.getChecks</code> for the checks of the condition, then passes
+  <code>index</code> and the number of checks to <code>Objects.checkIndex</code>. That throws an
+  <code>IndexOutOfBoundsException</code> when <code>index</code> is below 0 or not below the number of checks. A
+  <code>null</code> condition throws a <code>NullPointerException</code> as the constructor calls
+  <code>getChecks</code> on it.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-2">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">2</span></div>
+    <div><span class="tb-label">Title</span><h3>Registering a check</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">register(Checked)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="36 12 300 278" width="300" height="278" role="img" aria-label="Structure chart 2: register calls Objects.requireNonNull." style="--w:300">
+  <line class="call" x1="200" y1="76" x2="200" y2="228"/>
+  <polygon class="head" points="200,230 195.5,221 204.5,221"/>
+  <line class="cpl" x1="213" y1="122.5" x2="213" y2="146.5"/>
+  <polygon class="cpl-head" points="213,146.5 209.4,139.5 216.6,139.5"/>
+  <circle class="tail-d" cx="213" cy="122.5" r="3.6"/>
+  <text class="clbl" x="220" y="138.5">checked</text>
+  <line class="cpl" x1="213" y1="189.6" x2="213" y2="165.6"/>
+  <polygon class="cpl-head" points="213,165.6 216.6,172.6 209.4,172.6"/>
+  <circle class="tail-d" cx="213" cy="189.6" r="3.6"/>
+  <text class="clbl" x="220" y="181.6">checked</text>
+  <line class="cpl" x1="187" y1="189.6" x2="187" y2="165.6"/>
+  <polygon class="cpl-head" points="187,165.6 190.6,172.6 183.4,172.6"/>
+  <circle class="tail-f" cx="187" cy="189.6" r="3.6"/>
+  <text class="clbl" x="180" y="181.6" text-anchor="end">NullPointerException</text>
+  <rect class="box" x="144" y="30" width="112" height="46"/>
+  <text class="lbl" x="200" y="57" text-anchor="middle">register</text>
+  <rect class="box" x="105" y="230" width="190" height="46"/>
+  <line class="libbar" x1="112" y1="230" x2="112" y2="276"/>
+  <line class="libbar" x1="288" y1="230" x2="288" y2="276"/>
+  <text class="lbl" x="200" y="257" text-anchor="middle">Objects.requireNonNull</text>
+</svg>
+  </div>
+  <figcaption><p><code>register</code> passes <code>checked</code> to <code>Objects.requireNonNull</code>, which
+  returns it unchanged, or throws a <code>NullPointerException</code> when it is <code>null</code>.
+  <code>register</code> then adds the check to <code>CHECKS</code> and returns its position in that list as the
+  id.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-3">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">3</span></div>
+    <div><span class="tb-label">Title</span><h3>Recording a step</h3></div>
+    <div><span class="tb-label">Entry points</span><span class="tb-entry">enter, param, set, line, exit</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="30 12 780 582" width="780" height="582" role="img" aria-label="Structure chart 3: enter, param, set, line and exit each call add, which calls the Runaway constructor when the call has recorded too many events." style="--w:780">
+  <line class="call" x1="100" y1="76" x2="378.5" y2="328.7"/>
+  <polygon class="head" points="380,330 370.3,327.3 376.3,320.7"/>
+  <line class="call" x1="260" y1="76" x2="399" y2="328.2"/>
+  <polygon class="head" points="400,330 391.8,324.3 399.6,319.9"/>
+  <line class="call" x1="420" y1="76" x2="420" y2="328"/>
+  <polygon class="head" points="420,330 415.5,321 424.5,321"/>
+  <line class="call" x1="580" y1="76" x2="441" y2="328.2"/>
+  <polygon class="head" points="440,330 440.4,319.9 448.2,324.3"/>
+  <line class="call" x1="740" y1="76" x2="461.5" y2="328.7"/>
+  <polygon class="head" points="460,330 463.7,320.7 469.7,327.3"/>
+  <line class="call" x1="420" y1="376" x2="420" y2="528"/>
+  <polygon class="head" points="420,530 415.5,521 424.5,521"/>
+  <polygon class="diamond" points="420,377 426,384 420,391 414,384"/>
+  <line class="cpl" x1="151.6" y1="105.3" x2="169.4" y2="121.5"/>
+  <polygon class="cpl-head" points="169.4,121.5 166.6,114.1 161.8,119.5"/>
+  <circle class="tail-d" cx="151.6" cy="105.3" r="3.6"/>
+  <text class="clbl" x="176.5" y="117.4">Enter</text>
+  <line class="cpl" x1="228.7" y1="175.3" x2="210.9" y2="159.1"/>
+  <polygon class="cpl-head" points="210.9,159.1 218.5,161.1 213.7,166.5"/>
+  <circle class="tail-f" cx="228.7" cy="175.3" r="3.6"/>
+  <text class="clbl" x="235.8" y="171.2">Runaway</text>
+  <line class="cpl" x1="292.2" y1="107.4" x2="303.8" y2="128.4"/>
+  <polygon class="cpl-head" points="303.8,128.4 303.6,120.6 297.2,124"/>
+  <circle class="tail-d" cx="292.2" cy="107.4" r="3.6"/>
+  <text class="clbl" x="311" y="121.9">Param</text>
+  <line class="cpl" x1="342.4" y1="198.4" x2="330.8" y2="177.4"/>
+  <polygon class="cpl-head" points="330.8,177.4 337.4,181.8 331,185.2"/>
+  <circle class="tail-f" cx="342.4" cy="198.4" r="3.6"/>
+  <text class="clbl" x="349.6" y="191.9">Runaway</text>
+  <line class="cpl" x1="433" y1="123" x2="433" y2="147"/>
+  <polygon class="cpl-head" points="433,147 429.4,140 436.6,140"/>
+  <circle class="tail-d" cx="433" cy="123" r="3.6"/>
+  <text class="clbl" x="440" y="139">Set</text>
+  <line class="cpl" x1="433" y1="223" x2="433" y2="199"/>
+  <polygon class="cpl-head" points="433,199 436.6,206 429.4,206"/>
+  <circle class="tail-f" cx="433" cy="223" r="3.6"/>
+  <text class="clbl" x="440" y="215">Runaway</text>
+  <line class="cpl" x1="570.6" y1="120" x2="559" y2="141"/>
+  <polygon class="cpl-head" points="559,141 565.6,136.6 559.2,133.2"/>
+  <circle class="tail-d" cx="570.6" cy="120" r="3.6"/>
+  <text class="clbl" x="577.8" y="134.5">Line</text>
+  <line class="cpl" x1="520.4" y1="211" x2="532" y2="190"/>
+  <polygon class="cpl-head" points="532,190 531.8,197.8 525.4,194.4"/>
+  <circle class="tail-f" cx="520.4" cy="211" r="3.6"/>
+  <text class="clbl" x="539.2" y="204.5">Runaway</text>
+  <line class="cpl" x1="705.8" y1="124.5" x2="688" y2="140.7"/>
+  <polygon class="cpl-head" points="688,140.7 695.6,138.7 690.8,133.3"/>
+  <circle class="tail-d" cx="705.8" cy="124.5" r="3.6"/>
+  <text class="clbl" x="712.9" y="136.6">Exit</text>
+  <line class="cpl" x1="628.7" y1="194.5" x2="646.5" y2="178.3"/>
+  <polygon class="cpl-head" points="646.5,178.3 643.7,185.7 638.9,180.3"/>
+  <circle class="tail-f" cx="628.7" cy="194.5" r="3.6"/>
+  <text class="clbl" x="653.6" y="190.4">Runaway</text>
+  <line class="cpl" x1="433" y1="422.5" x2="433" y2="446.5"/>
+  <polygon class="cpl-head" points="433,446.5 429.4,439.5 436.6,439.5"/>
+  <circle class="tail-d" cx="433" cy="422.5" r="3.6"/>
+  <text class="clbl" x="440" y="438.5">message</text>
+  <rect class="box" x="44" y="30" width="112" height="46"/>
+  <text class="lbl" x="100" y="57" text-anchor="middle">enter</text>
+  <rect class="box" x="204" y="30" width="112" height="46"/>
+  <text class="lbl" x="260" y="57" text-anchor="middle">param</text>
+  <rect class="box" x="364" y="30" width="112" height="46"/>
+  <text class="lbl" x="420" y="57" text-anchor="middle">set</text>
+  <rect class="box" x="524" y="30" width="112" height="46"/>
+  <text class="lbl" x="580" y="57" text-anchor="middle">line</text>
+  <rect class="box" x="684" y="30" width="112" height="46"/>
+  <text class="lbl" x="740" y="57" text-anchor="middle">exit</text>
+  <rect class="box" x="364" y="330" width="112" height="46"/>
+  <text class="lbl" x="420" y="357" text-anchor="middle">add</text>
+  <rect class="box" x="364" y="530" width="112" height="46"/>
+  <text class="lbl" x="420" y="550" text-anchor="middle">new Runaway</text>
+  <text class="sub" x="420" y="565" text-anchor="middle">constructor</text>
+</svg>
+  </div>
+  <figcaption><p>Each of the five recording methods builds one event record from its arguments and passes it to
+  <code>add</code>. When the call has already recorded 50,000 events, <code>add</code> builds a <code>Runaway</code>
+  with a message and throws it, and the <code>Runaway</code> reaches the recording method as a flag. Otherwise
+  <code>add</code> adds the event to <code>EVENTS</code>.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-4">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">4</span></div>
+    <div><span class="tb-label">Title</span><h3>Answering a check</h3></div>
+    <div><span class="tb-label">Entry points</span><span class="tb-entry">check(int, int, int) and its three callers</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="15 12 750 680" width="750" height="680" role="img" aria-label="Structure chart 4: check(int, int), checkSame and checkNull each call check(int, int, int), which calls getChecked, Checked.getCheck, Condition.Check.eval and add; Checked.getCheck calls Condition.getChecks." style="--w:750">
+  <line class="call" x1="200" y1="76" x2="388.4" y2="228.7"/>
+  <polygon class="head" points="390,230 380.2,227.8 385.8,220.8"/>
+  <line class="call" x1="420" y1="76" x2="420" y2="228"/>
+  <polygon class="head" points="420,230 415.5,221 424.5,221"/>
+  <line class="call" x1="640" y1="76" x2="451.6" y2="228.7"/>
+  <polygon class="head" points="450,230 454.2,220.8 459.8,227.8"/>
+  <line class="call" x1="375" y1="276" x2="151.7" y2="428.9"/>
+  <polygon class="head" points="150,430 154.9,421.2 159.9,428.6"/>
+  <line class="call" x1="405" y1="276" x2="330.9" y2="428.2"/>
+  <polygon class="head" points="330,430 329.9,419.9 337.9,423.9"/>
+  <line class="call" x1="435" y1="276" x2="509.1" y2="428.2"/>
+  <polygon class="head" points="510,430 502.1,423.9 510.1,419.9"/>
+  <line class="call" x1="465" y1="276" x2="688.3" y2="428.9"/>
+  <polygon class="head" points="690,430 680.1,428.6 685.1,421.2"/>
+  <line class="call" x1="330" y1="476" x2="330" y2="628"/>
+  <polygon class="head" points="330,630 325.5,621 334.5,621"/>
+  <line class="cpl" x1="267.9" y1="147.8" x2="286.5" y2="163"/>
+  <polygon class="cpl-head" points="286.5,163 278.8,161.4 283.4,155.8"/>
+  <circle class="tail-d" cx="267.9" cy="147.8" r="3.6"/>
+  <text class="clbl" x="261.2" y="159.4" text-anchor="end">value, 0, id</text>
+  <line class="cpl" x1="433" y1="122.5" x2="433" y2="146.5"/>
+  <polygon class="cpl-head" points="433,146.5 429.4,139.5 436.6,139.5"/>
+  <circle class="tail-d" cx="433" cy="122.5" r="3.6"/>
+  <text class="clbl" x="440" y="138.5">0 or 1, 0, id</text>
+  <line class="cpl" x1="572.1" y1="147.8" x2="553.5" y2="163"/>
+  <polygon class="cpl-head" points="553.5,163 561.2,161.4 556.6,155.8"/>
+  <circle class="tail-d" cx="572.1" cy="147.8" r="3.6"/>
+  <text class="clbl" x="578.8" y="159.4">0 or 1, 0, id</text>
+  <line class="cpl" x1="328.1" y1="292.4" x2="308.3" y2="306"/>
+  <polygon class="cpl-head" points="308.3,306 312.1,299 316.1,305"/>
+  <circle class="tail-d" cx="328.1" cy="292.4" r="3.6"/>
+  <text class="clbl" x="304" y="295.2" text-anchor="end">id</text>
+  <line class="cpl" x1="250.5" y1="345.5" x2="270.3" y2="331.9"/>
+  <polygon class="cpl-head" points="270.3,331.9 262.5,332.9 266.5,338.9"/>
+  <circle class="tail-d" cx="250.5" cy="345.5" r="3.6"/>
+  <text class="clbl" x="246" y="334.7" text-anchor="end">checked</text>
+  <line class="cpl" x1="192.8" y1="385" x2="212.6" y2="371.4"/>
+  <polygon class="cpl-head" points="212.6,371.4 204.8,372.4 208.8,378.4"/>
+  <circle class="tail-f" cx="192.8" cy="385" r="3.6"/>
+  <text class="clbl" x="188" y="374.2" text-anchor="end">IndexOutOfBoundsException</text>
+  <line class="cpl" x1="344.2" y1="371" x2="354.8" y2="349.4"/>
+  <polygon class="cpl-head" points="354.8,349.4 348.5,354.1 354.9,357.3"/>
+  <circle class="tail-d" cx="344.2" cy="371" r="3.6"/>
+  <text class="clbl" x="337.5" y="364.2" text-anchor="end">check</text>
+  <line class="cpl" x1="461.8" y1="360.8" x2="472.4" y2="382.4"/>
+  <polygon class="cpl-head" points="472.4,382.4 466.1,377.7 472.5,374.5"/>
+  <circle class="tail-d" cx="461.8" cy="360.8" r="3.6"/>
+  <text class="clbl" x="455" y="375.6" text-anchor="end">left, right</text>
+  <line class="cpl" x1="489.9" y1="418.4" x2="479.3" y2="396.8"/>
+  <polygon class="cpl-head" points="479.3,396.8 479.2,404.7 485.6,401.5"/>
+  <circle class="tail-d" cx="489.9" cy="418.4" r="3.6"/>
+  <text class="clbl" x="472.6" y="411.6" text-anchor="end">answer</text>
+  <line class="cpl" x1="528.4" y1="303.7" x2="548.2" y2="317.3"/>
+  <polygon class="cpl-head" points="548.2,317.3 544.4,310.3 540.4,316.3"/>
+  <circle class="tail-d" cx="528.4" cy="303.7" r="3.6"/>
+  <text class="clbl" x="555.3" y="314.5">Result</text>
+  <line class="cpl" x1="630.7" y1="373.7" x2="610.9" y2="360.1"/>
+  <polygon class="cpl-head" points="610.9,360.1 618.7,361.1 614.7,367.1"/>
+  <circle class="tail-f" cx="630.7" cy="373.7" r="3.6"/>
+  <text class="clbl" x="637.8" y="370.9">Runaway</text>
+  <line class="cpl" x1="343" y1="589.6" x2="343" y2="565.6"/>
+  <polygon class="cpl-head" points="343,565.6 346.6,572.6 339.4,572.6"/>
+  <circle class="tail-d" cx="343" cy="589.6" r="3.6"/>
+  <text class="clbl" x="350" y="581.6">checks</text>
+  <rect class="box" x="131" y="30" width="138" height="46"/>
+  <text class="lbl" x="200" y="57" text-anchor="middle">check(int, int)</text>
+  <rect class="box" x="364" y="30" width="112" height="46"/>
+  <text class="lbl" x="420" y="57" text-anchor="middle">checkSame</text>
+  <rect class="box" x="584" y="30" width="112" height="46"/>
+  <text class="lbl" x="640" y="57" text-anchor="middle">checkNull</text>
+  <rect class="box" x="333" y="230" width="174" height="46"/>
+  <text class="lbl" x="420" y="257" text-anchor="middle">check(int, int, int)</text>
+  <rect class="box" x="94" y="430" width="112" height="46"/>
+  <text class="lbl" x="150" y="457" text-anchor="middle">getChecked</text>
+  <rect class="box" x="257.4" y="430" width="145.2" height="46"/>
+  <text class="lbl" x="330" y="457" text-anchor="middle">Checked.getCheck</text>
+  <rect class="box ext" x="454" y="430" width="112" height="46"/>
+  <text class="lbl ext" x="510" y="450" text-anchor="middle">Check.eval</text>
+  <text class="sub" x="510" y="465" text-anchor="middle">Condition</text>
+  <text class="note" x="510" y="493" text-anchor="middle">continues in Condition.html</text>
+  <rect class="box" x="634" y="430" width="112" height="46"/>
+  <text class="lbl" x="690" y="457" text-anchor="middle">add</text>
+  <text class="note" x="690" y="493" text-anchor="middle">continues on Chart 3</text>
+  <rect class="box ext" x="274" y="630" width="112" height="46"/>
+  <text class="lbl ext" x="330" y="650" text-anchor="middle">getChecks</text>
+  <text class="sub" x="330" y="665" text-anchor="middle">Condition</text>
+</svg>
+  </div>
+  <figcaption><p><code>check(int, int)</code>, <code>checkSame</code> and <code>checkNull</code> each turn their
+  arguments into two whole numbers and pass them to <code>check(int, int, int)</code> along with the id.
+  <code>check(int, int, int)</code> fetches the registered check with <code>getChecked</code> and
+  <code>Checked.getCheck</code>, then has <code>Check.eval</code> compare <code>left</code> with
+  <code>right</code>. It passes the answer to <code>add</code> inside a <code>Result</code> record.
+  <a href="Condition.html#chart-4">Chart 4 of the Condition charts</a> continues from the <code>Check.eval</code> box,
+  and <a href="#chart-3">Chart 3</a> continues from the <code>add</code> box.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-5">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">5</span></div>
+    <div><span class="tb-label">Title</span><h3>Counting loop passes</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">loop()</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="110 12 200 278" width="200" height="278" role="img" aria-label="Structure chart 5: loop calls the Runaway constructor when the loops have made too many passes." style="--w:200">
+  <line class="call" x1="200" y1="76" x2="200" y2="228"/>
+  <polygon class="head" points="200,230 195.5,221 204.5,221"/>
+  <polygon class="diamond" points="200,77 206,84 200,91 194,84"/>
+  <line class="cpl" x1="213" y1="122.5" x2="213" y2="146.5"/>
+  <polygon class="cpl-head" points="213,146.5 209.4,139.5 216.6,139.5"/>
+  <circle class="tail-d" cx="213" cy="122.5" r="3.6"/>
+  <text class="clbl" x="220" y="138.5">message</text>
+  <rect class="box" x="144" y="30" width="112" height="46"/>
+  <text class="lbl" x="200" y="57" text-anchor="middle">loop</text>
+  <rect class="box" x="144" y="230" width="112" height="46"/>
+  <text class="lbl" x="200" y="250" text-anchor="middle">new Runaway</text>
+  <text class="sub" x="200" y="265" text-anchor="middle">constructor</text>
+</svg>
+  </div>
+  <figcaption><p><code>loop</code> adds one to <code>loops</code>, the count of passes that every loop in the call
+  has made together. Once the count goes above 500, <code>loop</code> builds a <code>Runaway</code> with a message
+  and throws it. <code>loop</code> records no event.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-6">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">6</span></div>
+    <div><span class="tb-label">Title</span><h3>Reading the events</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">getEvents()</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="110 12 200 278" width="200" height="278" role="img" aria-label="Structure chart 6: getEvents calls List.copyOf." style="--w:200">
+  <line class="call" x1="200" y1="76" x2="200" y2="228"/>
+  <polygon class="head" points="200,230 195.5,221 204.5,221"/>
+  <line class="cpl" x1="213" y1="122.5" x2="213" y2="146.5"/>
+  <polygon class="cpl-head" points="213,146.5 209.4,139.5 216.6,139.5"/>
+  <circle class="tail-d" cx="213" cy="122.5" r="3.6"/>
+  <text class="clbl" x="220" y="138.5">EVENTS</text>
+  <line class="cpl" x1="213" y1="189.6" x2="213" y2="165.6"/>
+  <polygon class="cpl-head" points="213,165.6 216.6,172.6 209.4,172.6"/>
+  <circle class="tail-d" cx="213" cy="189.6" r="3.6"/>
+  <text class="clbl" x="220" y="181.6">copy</text>
+  <rect class="box" x="144" y="30" width="112" height="46"/>
+  <text class="lbl" x="200" y="57" text-anchor="middle">getEvents</text>
+  <rect class="box" x="144" y="230" width="112" height="46"/>
+  <line class="libbar" x1="151" y1="230" x2="151" y2="276"/>
+  <line class="libbar" x1="249" y1="230" x2="249" y2="276"/>
+  <text class="lbl" x="200" y="257" text-anchor="middle">List.copyOf</text>
+</svg>
+  </div>
+  <figcaption><p><code>getEvents</code> passes <code>EVENTS</code> to <code>List.copyOf</code> and returns the
+  copy, which throws an <code>UnsupportedOperationException</code> on any change. <code>reset</code> clears
+  <code>EVENTS</code> and sets <code>loops</code> back to 0 without calling any module, and it appears in the fan-in
+  table alone.</p></figcaption>
+</figure>
+</section>
+
+<section class="stack-lg" aria-labelledby="fan-h">
+  <div class="stack prose">
+    <h2 id="fan-h">Fan-in and fan-out</h2>
+    <p><em>Fan-in</em> is the number of modules that call a module. <em>Fan-out</em> is the number of modules it calls.
+    Yourdon and Constantine want high fan-in for small shared helpers, since it means one piece of code serves many
+    callers, and moderate fan-out, since a module that calls too many others is hard to follow. <code>add</code> has a
+    fan-in of 6, the highest in the file, because every method that records an event goes through it.
+    <code>check(int, int, int)</code> calls four modules, the most in the file and well within the usual rule of thumb
+    of about seven.</p>
+    <p>Thirteen modules have a fan-in of 0, since <code>Trace.fillCheck</code> is the one caller of
+    <code>Probe</code> in <code>src/main</code>.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Module</th><th scope="col">In</th><th scope="col">Called by</th><th scope="col">Out</th><th scope="col">Calls</th></tr></thead>
+      <tbody>
+<tr><td><span class="mono">new Checked</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">2</td><td><span class="mono">Condition.getChecks, Objects.checkIndex</span></td></tr>
+<tr><td><span class="mono">register</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">Objects.requireNonNull</span></td></tr>
+<tr><td><span class="mono">enter</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">add</span></td></tr>
+<tr><td><span class="mono">param</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">add</span></td></tr>
+<tr><td><span class="mono">set</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">add</span></td></tr>
+<tr><td><span class="mono">line</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">add</span></td></tr>
+<tr><td><span class="mono">exit</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">add</span></td></tr>
+<tr class="hi"><td><span class="mono">add</span></td><td class="num">6</td><td><span class="mono">enter, param, set, line, exit, check(int, int, int)</span></td><td class="num">1</td><td><span class="mono">new Runaway</span></td></tr>
+<tr><td><span class="mono">new Runaway</span></td><td class="num">2</td><td><span class="mono">add, loop</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr class="hi"><td><span class="mono">check(int, int, int)</span></td><td class="num">3</td><td><span class="mono">check(int, int), checkSame, checkNull</span></td><td class="num">4</td><td><span class="mono">getChecked, Checked.getCheck, Condition.Check.eval, add</span></td></tr>
+<tr><td><span class="mono">check(int, int)</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">check(int, int, int)</span></td></tr>
+<tr><td><span class="mono">checkSame</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">check(int, int, int)</span></td></tr>
+<tr><td><span class="mono">checkNull</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">check(int, int, int)</span></td></tr>
+<tr><td><span class="mono">getChecked</span></td><td class="num">2</td><td><span class="mono">check(int, int, int), Trace.fillCheck</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">Checked.getCheck</span></td><td class="num">1</td><td><span class="mono">check(int, int, int)</span></td><td class="num">1</td><td><span class="mono">Condition.getChecks</span></td></tr>
+<tr><td><span class="mono">loop</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">new Runaway</span></td></tr>
+<tr><td><span class="mono">getEvents</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">List.copyOf</span></td></tr>
+<tr><td><span class="mono">reset</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="stack-lg" aria-labelledby="notes-h">
+  <div class="stack prose">
+    <h2 id="notes-h">What the charts say about the design</h2>
+    <p>Structured Design judges a design by two measures. <em>Coupling</em> is how much one module depends on another,
+    and the couples on a chart are its visible part: fewer and simpler couples mean looser coupling. <em>Cohesion</em> is
+    how closely the statements inside one module serve a single job. A chart shows coupling directly, and these notes
+    read the charts that way.</p>
+  </div>
+  <div class="notes">
+<article class="note-item"><h3>add guards every event</h3><p>Six modules record an event, and all six do it through <code>add</code>. The check against <code>MAX_EVENTS</code> therefore lives in one place, and a new kind of event gets the limit by calling <code>add</code>. Yourdon and Constantine call this factoring: a job shared by several modules moves into one module beneath them, raising its fan-in.</p></article>
+<article class="note-item"><h3>Every module shares the static lists</h3><p><code>EVENTS</code>, <code>CHECKS</code> and <code>loops</code> are static fields, and most modules read or change them without any couple on a chart. Yourdon and Constantine call this common coupling, and rank it among the tightest kinds, since any module can change what another one sees. The reporting copy calls <code>Probe</code> through static methods, meaning it holds no <code>Probe</code> object to pass along, and the static fields are the place the events can go. The class Javadoc states the cost: <code>Probe</code> records one traced call at a time, on one thread.</p></article>
+<article class="note-item"><h3>Two callers turn a yes-or-no into a number</h3><p><code>checkSame</code> passes 0 when both objects are the same and 1 when they differ, and <code>checkNull</code> passes 0 for <code>null</code> and 1 for an object. Each also passes 0 as the right-hand value. The registered check then decides the answer: for <code>node != null</code>, an object becomes <code>1 != 0</code>, which is <code>true</code>. As a result, one module records every kind of check, at the price of a number that stands in for a <code>boolean</code>.</p></article>
+<article class="note-item"><h3>Runaway passes through the student&rsquo;s code</h3><p>A <code>Runaway</code> starts in <code>add</code> or <code>loop</code> and travels up through every traced method on the way to the code that started the call. <code>Runaway</code> extends <code>Error</code>, meaning a <code>catch (Exception e)</code> in the student&rsquo;s method lets it pass. The flag is aimed at the code that ran the call, and the modules in between have no say in it.</p></article>
+  </div>
+</section>
+
+<footer>
+  Drawn from <span class="mono">src/main/java/com/slinky/katas/internal/tracing/Probe.java</span>. Callers come
+  from <span class="mono">src/main</span> only; the unit tests are left out.
+</footer>
+
+</div>
+
+</body></html>

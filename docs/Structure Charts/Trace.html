@@ -1,0 +1,593 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Trace.java Structure Charts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root {
+  /* Layout: one reading column for prose (about 68ch); chart sheets break out to the full 1200px frame */
+  --paper: #edf1ee;
+  --sheet: #fafcfa;
+  --grid: #e6ece8;
+  --ink: #16201c;
+  --muted: #5b6a64;
+  --rule: #c6d1cb;
+  --box: #ffffff;
+  --accent: #1d7a52;
+  --accent-ink: #145f3f;
+  --code-bg: #e3eae6;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1412; --sheet: #131b18; --grid: #19231f; --ink: #dce6e1; --muted: #93a59e;
+    --rule: #2a3732; --box: #18221e; --accent: #5ec796; --accent-ink: #84dcb0; --code-bg: #1b2622;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1412; --sheet: #131b18; --grid: #19231f; --ink: #dce6e1; --muted: #93a59e;
+  --rule: #2a3732; --box: #18221e; --accent: #5ec796; --accent-ink: #84dcb0; --code-bg: #1b2622;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.frame { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 64px; display: grid; gap: 56px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 4.6vw, 3.1rem); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 1.6rem; font-weight: 600; }
+h3 { font-size: 1.2rem; font-weight: 600; }
+p { margin: 0; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.05em 0.35em; border-radius: 3px; }
+pre {
+  margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5;
+  background: var(--code-bg); padding: 10px 12px; border-radius: 4px; overflow-x: auto; white-space: pre;
+}
+.eyebrow {
+  font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500;
+}
+.stack { display: grid; gap: 14px; }
+.stack-lg { display: grid; gap: 24px; }
+
+/* Masthead */
+.masthead { display: grid; gap: 16px; border-bottom: 2px solid var(--ink); padding-bottom: 28px; }
+.masthead .lede { font-size: 1.1rem; max-width: 64ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 28px; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+
+/* Key */
+.key { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 0 40px; }
+.key-item { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px 16px; padding-block: 18px; border-top: 1px solid var(--rule); align-items: start; }
+.key-item pre { grid-column: 1 / -1; }
+.key-item svg { width: 112px; height: auto; display: block; }
+.key-text { display: grid; gap: 8px; min-width: 0; }
+.key-text strong { font-family: var(--display); font-size: 1.02rem; font-weight: 600; }
+.key-text p { font-size: 0.94rem; }
+.rules { display: grid; gap: 10px; font-size: 0.94rem; color: var(--muted); max-width: 72ch; }
+
+/* Sheets */
+.sheet { margin: 0; background-color: var(--sheet); border: 1px solid var(--rule); }
+.sheet-body {
+  overflow-x: auto; padding-block: 20px; padding-inline: 12px;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.sheet-body svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.titleblock {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: stretch;
+  border-bottom: 1px solid var(--rule); font-family: var(--display);
+}
+.titleblock > div { padding: 10px 16px; display: grid; align-content: center; gap: 2px; min-width: 0; }
+.titleblock > div + div { border-left: 1px solid var(--rule); }
+.tb-label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.tb-num { font-size: 1.5rem; font-weight: 600; line-height: 1; }
+.tb-entry { font-family: var(--mono); font-size: 0.82rem; }
+.sheet figcaption { padding: 14px 16px 18px; border-top: 1px solid var(--rule); font-size: 0.95rem; }
+.sheet figcaption p { max-width: 80ch; }
+
+/* Structure chart drawing */
+.sc .box { fill: var(--box); stroke: var(--ink); stroke-width: 1.4; }
+.sc .box.ext { fill: var(--sheet); stroke: var(--muted); stroke-dasharray: 5 4; }
+.sc .libbar { stroke: var(--ink); stroke-width: 1.2; }
+.sc .lbl { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+.sc .lbl.ext { fill: var(--muted); }
+.sc .sub { font-family: var(--body); font-size: 10px; fill: var(--muted); }
+.sc .note { font-family: var(--body); font-size: 11px; font-style: italic; fill: var(--muted); }
+.sc .call { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+.sc .head { fill: var(--ink); }
+.sc .diamond { fill: var(--box); stroke: var(--ink); stroke-width: 1.3; }
+.sc .loop { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+.sc .cpl { stroke: var(--accent); stroke-width: 1.4; fill: none; }
+.sc .cpl-head { fill: var(--accent); }
+.sc .tail-d { fill: var(--sheet); stroke: var(--accent); stroke-width: 1.4; }
+.sc .tail-f { fill: var(--accent); stroke: var(--accent); stroke-width: 1.4; }
+.sc .clbl {
+  font-family: var(--mono); font-size: 11px; fill: var(--accent-ink);
+  paint-order: stroke; stroke: var(--sheet); stroke-width: 3.5px; stroke-linejoin: round;
+}
+.key-item .sc .tail-d, .key-item .sc .clbl { stroke: var(--paper); }
+.key-item .sc .tail-d { stroke: var(--accent); fill: var(--paper); }
+
+/* Table */
+.table-wrap { overflow-x: auto; border-top: 2px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; padding-right: 20px; width: 4ch; }
+td .mono { font-size: 0.86rem; }
+tr.hi td.num { color: var(--accent-ink); font-weight: 500; }
+
+/* Notes */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px 40px; }
+.note-item { display: grid; gap: 8px; align-content: start; border-top: 1px solid var(--rule); padding-top: 14px; }
+.note-item p { font-size: 0.97rem; }
+
+footer { border-top: 1px solid var(--rule); padding-top: 16px; color: var(--muted); font-size: 0.85rem; }
+
+@media (max-width: 760px) {
+  .frame { padding-inline: 16px; gap: 44px; }
+  .sheet-body svg { max-width: none; width: calc(var(--w) * 0.74px); }
+  .titleblock { grid-template-columns: auto minmax(0, 1fr); }
+  .titleblock > div:last-child { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--rule); }
+}
+</style>
+
+<div class="frame">
+
+<header class="masthead">
+  <span class="eyebrow">Structured Design &middot; com.slinky.katas.internal.tracing</span>
+  <h1>Trace.java structure charts</h1>
+  <p class="lede">A structure chart, from Yourdon and Constantine&rsquo;s Structured Design, shows which modules call
+  which, and what passes between them on each call. It leaves out the order of statements inside a module.
+  <code>Trace.java</code> has 19 modules. No other class in <code>src/main</code> calls <code>Trace</code> yet, and each
+  of the four charts therefore starts at an entry point of the class instead of at a caller.</p>
+  <div class="meta"><span>Trace.java v1.0.0</span><span>Last modified 2026-10-08</span><span>19 modules &middot; 4 charts</span></div>
+</header>
+
+<section class="stack-lg" aria-labelledby="key-h">
+  <div class="stack prose">
+    <h2 id="key-h">Reading the charts</h2>
+    <p>In Structured Design a <em>module</em> is a named piece of code that a caller can invoke and get control back
+    from. In Java that is a method or a constructor. Each symbol below comes with the line in <code>Trace.java</code>
+    that produces it.</p>
+  </div>
+  <div class="key">
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A plain box"><rect class="box" x="6" y="15" width="100" height="30"/><text class="lbl" x="56" y="34" text-anchor="middle" style="font-size:11px">formatAnswer</text></svg><div class="key-text"><strong>Module</strong><p>One method or constructor in Trace.java. The chart shows what it does for its caller, not the statements inside it.</p></div><pre><code>private static String formatAnswer(boolean answer) {</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="An arrow from an upper box to a lower box"><rect class="box" x="30" y="2" width="52" height="14"/><line class="call" x1="56" y1="16" x2="56" y2="42"/><polygon class="head" points="56,44 51.5,35 60.5,35"/><rect class="box" x="30" y="44" width="52" height="14"/></svg><div class="key-text"><strong>Call</strong><p>An arrow from a module down to a module it calls. The caller is drawn above.</p></div><pre><code>var answerText    = formatAnswer(answer);   // in fillCheck</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="Two small arrows with hollow circles at their tails beside the call arrow, one pointing down and one up"><line class="call" x1="20" y1="2" x2="20" y2="56"/><polygon class="head" points="20,58 15.5,49 24.5,49"/><line class="cpl" x1="34" y1="8" x2="34" y2="23"/><polygon class="cpl-head" points="34,29 30.4,22 37.6,22"/><circle class="tail-d" cx="34" cy="8" r="3.6"/><text class="clbl" x="43" y="22">answer</text><line class="cpl" x1="34" y1="54" x2="34" y2="39"/><polygon class="cpl-head" points="34,33 30.4,40 37.6,40"/><circle class="tail-d" cx="34" cy="54" r="3.6"/><text class="clbl" x="43" y="48">answerText</text></svg><div class="key-text"><strong>Data couple</strong><p>A value passed on a call. The hollow circle marks the tail, and the arrow points the way the value travels: down into the called module, or up as its result.</p></div><pre><code>var answerText    = formatAnswer(answer);   // in fillCheck
+// answer goes down, "T" or "F" comes back up</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A small arrow with a filled circle at its tail beside the call arrow"><line class="call" x1="30" y1="2" x2="30" y2="56"/><polygon class="head" points="30,58 25.5,49 34.5,49"/><line class="cpl" x1="46" y1="44" x2="46" y2="22"/><polygon class="cpl-head" points="46,16 42.4,23 49.6,23"/><circle class="tail-f" cx="46" cy="44" r="3.6"/><text class="clbl" x="56" y="34">startRow</text></svg><div class="key-text"><strong>Flag</strong><p>A value whose job is to steer what a module does next. The filled circle marks the tail. A flag travels up when it reports a fact the caller acts on, and down when it tells the called module what to do. A thrown exception is drawn as a flag too, since it sends the caller to its <code>catch</code> block.</p></div><pre><code>return hasStartRow() ? rowCount - 1 : rowCount;   // in countPasses</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A small diamond where the call arrow leaves the caller"><rect class="box" x="20" y="0" width="72" height="12"/><line class="call" x1="56" y1="12" x2="56" y2="56"/><polygon class="head" points="56,58 51.5,49 60.5,49"/><polygon class="diamond" points="56,13 62,20 56,27 50,20"/></svg><div class="key-text"><strong>Conditional call</strong><p>The diamond means the call happens only when a test passes. In the constructor, the test is the case of the <code>switch</code> that the event matches.</p></div><pre><code>case Probe.Enter enter -&gt; calls.push(new Call(enter.method()));</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A curved arrow drawn across two call arrows below the caller"><rect class="box" x="20" y="0" width="72" height="12"/><line class="call" x1="46" y1="12" x2="28" y2="56"/><polygon class="head" points="27.2,58 25.4,48.8 33.6,52"/><line class="call" x1="66" y1="12" x2="84" y2="56"/><polygon class="head" points="84.8,58 78.4,52 86.6,48.8"/><path class="loop" d="M30,26 Q56,46 80,26"/><polygon class="head" points="82.5,24 77.3,32 74.2,25.6"/></svg><div class="key-text"><strong>Repeated calls</strong><p>The curved arrow crosses every call that runs once per pass of a loop. In the constructor the loop runs once for each event.</p></div><pre><code>for (var event : events) {</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a second line inside each side"><rect class="box" x="6" y="15" width="100" height="30"/><line class="libbar" x1="13" y1="15" x2="13" y2="45"/><line class="libbar" x1="99" y1="15" x2="99" y2="45"/><text class="lbl" x="56" y="34" text-anchor="middle" style="font-size:11px">List.copyOf</text></svg><div class="key-text"><strong>Library module</strong><p>A method from the JDK that Trace.java calls but does not define.</p></div><pre><code>return List.copyOf(columns);   // in getColumns</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a dashed outline"><rect class="box ext" x="6" y="15" width="100" height="30"/><text class="lbl ext" x="56" y="34" text-anchor="middle" style="font-size:11px">getChecked</text></svg><div class="key-text"><strong>Module in another file</strong><p>A dashed box is a method outside Trace.java, drawn to show where a chart leaves the class.</p></div><pre><code>var checked       = Probe.getChecked(result.id());   // in fillCheck</code></pre></div>
+  </div>
+  <div class="rules">
+    <p>Couples take the name of the variable in the code, letting you find each one in <code>Trace.java</code>.
+    Where the code passes a value straight on without storing it in a variable, the couple takes a short name for it,
+    such as <code>trace</code> for the <code>Trace</code> that <code>build</code> returns, or <code>position</code> for
+    the number that <code>Map.computeIfAbsent</code> returns.</p>
+    <p>A module that one caller calls from several places is drawn once. <code>fillCheck</code> calls
+    <code>findColumn</code>, <code>formatAnswer</code> and <code>RowBuilder.put</code> more than once, and the couples on
+    each of those calls show the values of the call for the check that ran. A flag is drawn once, on the call where its
+    exception starts. <code>Trace.java</code> catches none of them, and each one carries on up to the code that called
+    the entry point.</p>
+    <p>Java writes the constructors and accessors of the records <code>Column</code>, <code>Step</code>,
+    <code>ColumnKey</code> and <code>Probe.Checked</code>, along with the constructor of <code>RowBuilder</code>. These
+    are left out of the charts and the count. Calls to <code>List</code>, <code>Map</code>, <code>Set</code>,
+    <code>ArrayDeque</code>, <code>Collections</code> and <code>String</code> methods are left out too, apart from
+    <code>List.copyOf</code>, <code>Map.computeIfAbsent</code> and <code>Stream.anyMatch</code>, each of which is the
+    whole job of the module that calls it. The lambda that <code>findColumn</code> passes to
+    <code>Map.computeIfAbsent</code> is drawn beneath it, as the module that <code>computeIfAbsent</code> calls for a new
+    key. It has no name, and it is left out of the 19 modules.</p>
+  </div>
+</section>
+
+<section class="stack-lg" aria-label="Structure charts">
+
+<figure class="sheet" id="chart-1">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">1</span></div>
+    <div><span class="tb-label">Title</span><h3>Building the table</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">build(List, Object, Throwable)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="110 12 1030 590" width="1030" height="590" role="img" aria-label="Structure chart 1: build calls the Trace constructor, which calls the Call constructor, findColumn, RowBuilder.put and fillCheck once per event, each for one kind of event." style="--w:1030">
+  <line class="call" x1="600" y1="76" x2="600" y2="228"/>
+  <polygon class="head" points="600,230 595.5,221 604.5,221"/>
+  <line class="call" x1="555" y1="276" x2="181.7" y2="528.9"/>
+  <polygon class="head" points="180,530 185,521.3 190,528.7"/>
+  <polygon class="diamond" points="547.5,274 553.5,281 547.5,288 541.5,281"/>
+  <line class="call" x1="585" y1="276" x2="480.8" y2="528.2"/>
+  <polygon class="head" points="480,530 479.2,520 487.6,523.4"/>
+  <polygon class="diamond" points="581.6,277.3 587.6,284.3 581.6,291.3 575.6,284.3"/>
+  <line class="call" x1="615" y1="276" x2="759" y2="528.3"/>
+  <polygon class="head" points="760,530 751.6,524.4 759.4,520"/>
+  <polygon class="diamond" points="619.5,276.8 625.5,283.8 619.5,290.8 613.5,283.8"/>
+  <line class="call" x1="645" y1="276" x2="1058.3" y2="529"/>
+  <polygon class="head" points="1060,530 1050,529.1 1054.6,521.5"/>
+  <polygon class="diamond" points="652.7,273.7 658.7,280.7 652.7,287.7 646.7,280.7"/>
+  <path class="loop" d="M455,318 Q600,388 745,318"/>
+  <polygon class="head" points="745,318 738.9,325.9 734.9,317.9"/>
+  <line class="cpl" x1="613" y1="122.5" x2="613" y2="146.5"/>
+  <polygon class="cpl-head" points="613,146.5 609.4,139.5 616.6,139.5"/>
+  <circle class="tail-d" cx="613" cy="122.5" r="3.6"/>
+  <text class="clbl" x="620" y="138.5">events, result, failure</text>
+  <line class="cpl" x1="613" y1="189.6" x2="613" y2="165.6"/>
+  <polygon class="cpl-head" points="613,165.6 616.6,172.6 609.4,172.6"/>
+  <circle class="tail-d" cx="613" cy="189.6" r="3.6"/>
+  <text class="clbl" x="620" y="181.6">trace</text>
+  <line class="cpl" x1="408.6" y1="359.5" x2="388.8" y2="372.9"/>
+  <polygon class="cpl-head" points="388.8,372.9 392.6,366 396.6,372"/>
+  <circle class="tail-d" cx="408.6" cy="359.5" r="3.6"/>
+  <text class="clbl" x="381.7" y="364" text-anchor="end">method</text>
+  <line class="cpl" x1="306" y1="429" x2="325.8" y2="415.6"/>
+  <polygon class="cpl-head" points="325.8,415.6 318,416.5 322,422.5"/>
+  <circle class="tail-d" cx="306" cy="429" r="3.6"/>
+  <text class="clbl" x="299" y="422" text-anchor="end">call</text>
+  <line class="cpl" x1="518.7" y1="402.2" x2="527.9" y2="380"/>
+  <polygon class="cpl-head" points="527.9,380 521.9,385.1 528.5,387.9"/>
+  <circle class="tail-d" cx="518.7" cy="402.2" r="3.6"/>
+  <text class="clbl" x="511.3" y="395" text-anchor="end">column</text>
+  <line class="cpl" x1="499.3" y1="449.3" x2="490.1" y2="471.5"/>
+  <polygon class="cpl-head" points="490.1,471.5 489.5,463.6 496.1,466.4"/>
+  <circle class="tail-d" cx="499.3" cy="449.3" r="3.6"/>
+  <text class="clbl" x="483" y="456" text-anchor="end">keys, owners,</text>
+  <text class="clbl" x="483" y="469" text-anchor="end">method, name, name, false</text>
+  <line class="cpl" x1="687.3" y1="376.4" x2="699.3" y2="397.2"/>
+  <polygon class="cpl-head" points="699.3,397.2 698.9,389.3 692.7,392.9"/>
+  <circle class="tail-f" cx="687.3" cy="376.4" r="3.6"/>
+  <text class="clbl" x="706" y="391">isParameter</text>
+  <line class="cpl" x1="714.5" y1="424.1" x2="726.5" y2="444.9"/>
+  <polygon class="cpl-head" points="726.5,444.9 726.1,437 719.9,440.6"/>
+  <circle class="tail-d" cx="714.5" cy="424.1" r="3.6"/>
+  <text class="clbl" x="733.5" y="439">column, value, line</text>
+  <line class="cpl" x1="812.2" y1="363" x2="832.6" y2="375.6"/>
+  <polygon class="cpl-head" points="832.6,375.6 828.5,368.8 824.7,375"/>
+  <circle class="tail-d" cx="812.2" cy="363" r="3.6"/>
+  <text class="clbl" x="839.4" y="366">keys, owners, call,</text>
+  <text class="clbl" x="839.4" y="379">builder, checkResult</text>
+  <rect class="box" x="544" y="30" width="112" height="46"/>
+  <text class="lbl" x="600" y="57" text-anchor="middle">build</text>
+  <rect class="box" x="544" y="230" width="112" height="46"/>
+  <text class="lbl" x="600" y="250" text-anchor="middle">new Trace</text>
+  <text class="sub" x="600" y="265" text-anchor="middle">constructor</text>
+  <rect class="box" x="124" y="530" width="112" height="46"/>
+  <text class="lbl" x="180" y="550" text-anchor="middle">new Call</text>
+  <text class="sub" x="180" y="565" text-anchor="middle">constructor</text>
+  <rect class="box" x="424" y="530" width="112" height="46"/>
+  <text class="lbl" x="480" y="557" text-anchor="middle">findColumn</text>
+  <text class="note" x="480" y="593" text-anchor="middle">continues on Chart 3</text>
+  <rect class="box" x="694.5" y="530" width="131" height="46"/>
+  <text class="lbl" x="760" y="557" text-anchor="middle">RowBuilder.put</text>
+  <rect class="box" x="1004" y="530" width="112" height="46"/>
+  <text class="lbl" x="1060" y="557" text-anchor="middle">fillCheck</text>
+  <text class="note" x="1060" y="593" text-anchor="middle">continues on Chart 2</text>
+</svg>
+  </div>
+  <figcaption><p><code>build</code> passes the events, the return value and the exception to the private constructor,
+  and returns the <code>Trace</code> it builds. The constructor reads the events twice. The first pass collects the
+  working methods, which are the methods that set a variable or run a check, and calls no module. The second pass looks
+  at the kind of each event. An <code>Enter</code> starts a new <code>Call</code>. A <code>Set</code>, or a
+  <code>Param</code> of a working method, finds its column with <code>findColumn</code> and passes its value to
+  <code>RowBuilder.put</code>. A <code>Result</code> goes to <code>fillCheck</code>. Last, the constructor puts the
+  method name in front of each variable heading that two methods share.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-2">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">2</span></div>
+    <div><span class="tb-label">Title</span><h3>Filling in a check</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">fillCheck(Map, List, Call, RowBuilder, Probe.Result)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="30 12 1290 664" width="1290" height="664" role="img" aria-label="Structure chart 2: fillCheck calls Probe.getChecked, Condition.getChecks, Condition.getText, findColumn, formatAnswer, RowBuilder.put, Probe.Checked.getCheck and Condition.evaluate." style="--w:1290">
+  <line class="call" x1="715" y1="76" x2="101.9" y2="299.3"/>
+  <polygon class="head" points="100,300 107,292.7 110,301.1"/>
+  <line class="call" x1="725" y1="76" x2="271.8" y2="299.1"/>
+  <polygon class="head" points="270,300 276.1,292 280.1,300"/>
+  <line class="call" x1="735" y1="76" x2="441.6" y2="298.8"/>
+  <polygon class="head" points="440,300 444.5,291 449.9,298.2"/>
+  <line class="call" x1="750" y1="76" x2="580.6" y2="598.1"/>
+  <polygon class="head" points="580,600 578.5,590 587.1,592.8"/>
+  <path class="loop" d="M584,505 Q606,530 628,505"/>
+  <polygon class="head" points="628,505 625.5,514.8 618.7,508.8"/>
+  <line class="call" x1="760" y1="76" x2="760" y2="598"/>
+  <polygon class="head" points="760,600 755.5,591 764.5,591"/>
+  <line class="call" x1="770" y1="76" x2="939.4" y2="598.1"/>
+  <polygon class="head" points="940,600 932.9,592.8 941.5,590"/>
+  <line class="call" x1="785" y1="76" x2="1078.4" y2="298.8"/>
+  <polygon class="head" points="1080,300 1070.1,298.2 1075.5,291"/>
+  <line class="call" x1="795" y1="76" x2="1248.2" y2="299.1"/>
+  <polygon class="head" points="1250,300 1239.9,300 1243.9,292"/>
+  <polygon class="diamond" points="803.1,73 809.1,80 803.1,87 797.1,80"/>
+  <line class="cpl" x1="534" y1="128.1" x2="511.4" y2="136.3"/>
+  <polygon class="cpl-head" points="511.4,136.3 516.8,130.5 519.2,137.3"/>
+  <circle class="tail-d" cx="534" cy="128.1" r="3.6"/>
+  <text class="clbl" x="522.7" y="122" text-anchor="middle">id</text>
+  <line class="cpl" x1="398.6" y1="177.4" x2="421.2" y2="169.2"/>
+  <polygon class="cpl-head" points="421.2,169.2 413.4,168.2 415.8,175"/>
+  <circle class="tail-d" cx="398.6" cy="177.4" r="3.6"/>
+  <text class="clbl" x="409.9" y="163" text-anchor="middle">checked</text>
+  <line class="cpl" x1="257.6" y1="228.7" x2="280.2" y2="220.5"/>
+  <polygon class="cpl-head" points="280.2,220.5 272.4,219.5 274.8,226.3"/>
+  <circle class="tail-f" cx="257.6" cy="228.7" r="3.6"/>
+  <text class="clbl" x="249" y="218" text-anchor="end">IndexOutOfBoundsException</text>
+  <line class="cpl" x1="367.6" y1="237.4" x2="389.2" y2="226.8"/>
+  <polygon class="cpl-head" points="389.2,226.8 381.3,226.7 384.5,233.1"/>
+  <circle class="tail-d" cx="367.6" cy="237.4" r="3.6"/>
+  <text class="clbl" x="359.6" y="236.1" text-anchor="end">checks</text>
+  <line class="cpl" x1="526.2" y1="250.9" x2="545.4" y2="236.3"/>
+  <polygon class="cpl-head" points="545.4,236.3 542,243.4 537.6,237.6"/>
+  <circle class="tail-d" cx="526.2" cy="250.9" r="3.6"/>
+  <text class="clbl" x="547.8" y="257.6">conditionText</text>
+  <line class="cpl" x1="636.4" y1="384" x2="629" y2="406.8"/>
+  <polygon class="cpl-head" points="629,406.8 627.8,399 634.6,401.2"/>
+  <circle class="tail-d" cx="636.4" cy="384" r="3.6"/>
+  <text class="clbl" x="620.7" y="392" text-anchor="end">keys, owners, method,</text>
+  <text class="clbl" x="620.7" y="405" text-anchor="end">key, heading, true</text>
+  <line class="cpl" x1="604.3" y1="482.9" x2="611.7" y2="460.1"/>
+  <polygon class="cpl-head" points="611.7,460.1 606.1,465.7 612.9,467.9"/>
+  <circle class="tail-d" cx="604.3" cy="482.9" r="3.6"/>
+  <text class="clbl" x="596" y="475" text-anchor="end">column</text>
+  <line class="cpl" x1="773" y1="380" x2="773" y2="404"/>
+  <polygon class="cpl-head" points="773,404 769.4,397 776.6,397"/>
+  <circle class="tail-d" cx="773" cy="380" r="3.6"/>
+  <text class="clbl" x="780" y="396">answer</text>
+  <line class="cpl" x1="773" y1="470" x2="773" y2="446"/>
+  <polygon class="cpl-head" points="773,446 776.6,453 769.4,453"/>
+  <circle class="tail-d" cx="773" cy="470" r="3.6"/>
+  <text class="clbl" x="780" y="462">answerText</text>
+  <line class="cpl" x1="877.5" y1="365" x2="884.9" y2="387.8"/>
+  <polygon class="cpl-head" points="884.9,387.8 886.1,380 879.3,382.2"/>
+  <circle class="tail-d" cx="877.5" cy="365" r="3.6"/>
+  <text class="clbl" x="893" y="380">column, text, line</text>
+  <line class="cpl" x1="902.1" y1="441.1" x2="909.5" y2="463.9"/>
+  <polygon class="cpl-head" points="909.5,463.9 910.7,456.1 903.9,458.3"/>
+  <circle class="tail-f" cx="902.1" cy="441.1" r="3.6"/>
+  <text class="clbl" x="918" y="456">isParameter</text>
+  <line class="cpl" x1="977.7" y1="205.9" x2="958.5" y2="191.3"/>
+  <polygon class="cpl-head" points="958.5,191.3 966.3,192.6 961.9,198.4"/>
+  <circle class="tail-d" cx="977.7" cy="205.9" r="3.6"/>
+  <text class="clbl" x="968" y="184" text-anchor="middle">check</text>
+  <line class="cpl" x1="1041.1" y1="182.6" x2="1062.7" y2="193.2"/>
+  <polygon class="cpl-head" points="1062.7,193.2 1058,186.9 1054.8,193.3"/>
+  <circle class="tail-d" cx="1041.1" cy="182.6" r="3.6"/>
+  <text class="clbl" x="1051.9" y="175" text-anchor="middle">answers</text>
+  <line class="cpl" x1="1179.3" y1="250.7" x2="1157.7" y2="240.1"/>
+  <polygon class="cpl-head" points="1157.7,240.1 1165.6,240 1162.4,246.4"/>
+  <circle class="tail-d" cx="1179.3" cy="250.7" r="3.6"/>
+  <text class="clbl" x="1168.5" y="233" text-anchor="middle">whole</text>
+  <rect class="box" x="704" y="30" width="112" height="46"/>
+  <text class="lbl" x="760" y="57" text-anchor="middle">fillCheck</text>
+  <rect class="box ext" x="44" y="300" width="112" height="46"/>
+  <text class="lbl ext" x="100" y="320" text-anchor="middle">getChecked</text>
+  <text class="sub" x="100" y="335" text-anchor="middle">Probe</text>
+  <rect class="box ext" x="214" y="300" width="112" height="46"/>
+  <text class="lbl ext" x="270" y="320" text-anchor="middle">getChecks</text>
+  <text class="sub" x="270" y="335" text-anchor="middle">Condition</text>
+  <rect class="box ext" x="384" y="300" width="112" height="46"/>
+  <text class="lbl ext" x="440" y="320" text-anchor="middle">getText</text>
+  <text class="sub" x="440" y="335" text-anchor="middle">Condition</text>
+  <rect class="box" x="524" y="600" width="112" height="46"/>
+  <text class="lbl" x="580" y="627" text-anchor="middle">findColumn</text>
+  <text class="note" x="580" y="663" text-anchor="middle">continues on Chart 3</text>
+  <rect class="box" x="701" y="600" width="118" height="46"/>
+  <text class="lbl" x="760" y="627" text-anchor="middle">formatAnswer</text>
+  <rect class="box" x="874.5" y="600" width="131" height="46"/>
+  <text class="lbl" x="940" y="627" text-anchor="middle">RowBuilder.put</text>
+  <rect class="box ext" x="1024" y="300" width="112" height="46"/>
+  <text class="lbl ext" x="1080" y="320" text-anchor="middle">getCheck</text>
+  <text class="sub" x="1080" y="335" text-anchor="middle">Probe.Checked</text>
+  <rect class="box ext" x="1194" y="300" width="112" height="46"/>
+  <text class="lbl ext" x="1250" y="320" text-anchor="middle">evaluate</text>
+  <text class="sub" x="1250" y="335" text-anchor="middle">Condition</text>
+  <text class="note" x="1250" y="363" text-anchor="middle">continues in Condition.html</text>
+</svg>
+  </div>
+  <figcaption><p><code>fillCheck</code> fetches the registered check with <code>Probe.getChecked</code>, then asks its
+  condition for the list of checks and the text. It calls <code>findColumn</code> once for each check of the
+  condition, once for the whole condition when that has two or more checks, and once more for the check that ran.
+  <code>formatAnswer</code> turns the answer into <code>T</code> or <code>F</code>, and <code>RowBuilder.put</code>
+  places it in a row. For a condition with two or more checks, <code>fillCheck</code> then passes the answers so far
+  to <code>Condition.evaluate</code>. Once that decides the whole condition, <code>fillCheck</code> formats and places
+  the answer of the whole condition the same way. <a href="Condition.html#chart-3">Chart 3 of the Condition charts</a>
+  continues from the <code>evaluate</code> box.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-3">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">3</span></div>
+    <div><span class="tb-label">Title</span><h3>Finding a column</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">findColumn(Map, List, String, String, String, boolean)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="200 12 240 478" width="240" height="478" role="img" aria-label="Structure chart 3: findColumn calls Map.computeIfAbsent, which calls the lambda from findColumn when the key is new." style="--w:240">
+  <line class="call" x1="300" y1="76" x2="300" y2="228"/>
+  <polygon class="head" points="300,230 295.5,221 304.5,221"/>
+  <line class="call" x1="300" y1="276" x2="300" y2="428"/>
+  <polygon class="head" points="300,430 295.5,421 304.5,421"/>
+  <polygon class="diamond" points="300,277 306,284 300,291 294,284"/>
+  <line class="cpl" x1="313" y1="122.5" x2="313" y2="146.5"/>
+  <polygon class="cpl-head" points="313,146.5 309.4,139.5 316.6,139.5"/>
+  <circle class="tail-d" cx="313" cy="122.5" r="3.6"/>
+  <text class="clbl" x="320" y="138.5">columnKey, lambda</text>
+  <line class="cpl" x1="313" y1="189.6" x2="313" y2="165.6"/>
+  <polygon class="cpl-head" points="313,165.6 316.6,172.6 309.4,172.6"/>
+  <circle class="tail-d" cx="313" cy="189.6" r="3.6"/>
+  <text class="clbl" x="320" y="181.6">position</text>
+  <line class="cpl" x1="313" y1="322.5" x2="313" y2="346.5"/>
+  <polygon class="cpl-head" points="313,346.5 309.4,339.5 316.6,339.5"/>
+  <circle class="tail-d" cx="313" cy="322.5" r="3.6"/>
+  <text class="clbl" x="320" y="338.5">columnKey</text>
+  <line class="cpl" x1="313" y1="389.6" x2="313" y2="365.6"/>
+  <polygon class="cpl-head" points="313,365.6 316.6,372.6 309.4,372.6"/>
+  <circle class="tail-d" cx="313" cy="389.6" r="3.6"/>
+  <text class="clbl" x="320" y="381.6">position</text>
+  <rect class="box" x="244" y="30" width="112" height="46"/>
+  <text class="lbl" x="300" y="57" text-anchor="middle">findColumn</text>
+  <rect class="box" x="216.5" y="230" width="167" height="46"/>
+  <line class="libbar" x1="223.5" y1="230" x2="223.5" y2="276"/>
+  <line class="libbar" x1="376.5" y1="230" x2="376.5" y2="276"/>
+  <text class="lbl" x="300" y="257" text-anchor="middle">Map.computeIfAbsent</text>
+  <rect class="box" x="244" y="430" width="112" height="46"/>
+  <text class="lbl" x="300" y="450" text-anchor="middle">lambda</text>
+  <text class="sub" x="300" y="465" text-anchor="middle">in findColumn</text>
+</svg>
+  </div>
+  <figcaption><p><code>findColumn</code> builds a <code>ColumnKey</code> from the method, the kind of column and the
+  key, then passes it to <code>Map.computeIfAbsent</code> along with a lambda. When <code>keys</code> has no entry for
+  that key, <code>computeIfAbsent</code> calls the lambda. The lambda adds a <code>Column</code> to
+  <code>columns</code> and the method to <code>owners</code>, then returns the position of the new column, which
+  <code>computeIfAbsent</code> stores under the key. Either way, <code>findColumn</code> returns the position of the
+  column.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-4">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">4</span></div>
+    <div><span class="tb-label">Title</span><h3>Reading the table</h3></div>
+    <div><span class="tb-label">Entry points</span><span class="tb-entry">getColumns, getSteps, countPasses, hasConditions</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="40 12 880 278" width="880" height="278" role="img" aria-label="Structure chart 4: getColumns and getSteps both call List.copyOf, countPasses calls hasStartRow, and hasConditions calls Stream.anyMatch." style="--w:880">
+  <line class="call" x1="130" y1="76" x2="199.2" y2="228.2"/>
+  <polygon class="head" points="200,230 192.2,223.7 200.4,219.9"/>
+  <line class="call" x1="310" y1="76" x2="240.8" y2="228.2"/>
+  <polygon class="head" points="240,230 239.6,219.9 247.8,223.7"/>
+  <line class="call" x1="520" y1="76" x2="520" y2="228"/>
+  <polygon class="head" points="520,230 515.5,221 524.5,221"/>
+  <line class="call" x1="760" y1="76" x2="760" y2="228"/>
+  <polygon class="head" points="760,230 755.5,221 764.5,221"/>
+  <line class="cpl" x1="131.8" y1="111.5" x2="141.8" y2="133.3"/>
+  <polygon class="cpl-head" points="141.8,133.3 135.6,128.4 142.2,125.4"/>
+  <circle class="tail-d" cx="131.8" cy="111.5" r="3.6"/>
+  <text class="clbl" x="127" y="128" text-anchor="end">columns</text>
+  <line class="cpl" x1="170.8" y1="197" x2="160.8" y2="175.2"/>
+  <polygon class="cpl-head" points="160.8,175.2 160.4,183.1 167,180.1"/>
+  <circle class="tail-d" cx="170.8" cy="197" r="3.6"/>
+  <text class="clbl" x="156" y="191" text-anchor="end">copy</text>
+  <line class="cpl" x1="308.2" y1="111.5" x2="298.2" y2="133.3"/>
+  <polygon class="cpl-head" points="298.2,133.3 304.4,128.4 297.8,125.4"/>
+  <circle class="tail-d" cx="308.2" cy="111.5" r="3.6"/>
+  <text class="clbl" x="313" y="128">steps</text>
+  <line class="cpl" x1="269.2" y1="197" x2="279.2" y2="175.2"/>
+  <polygon class="cpl-head" points="279.2,175.2 279.6,183.1 273,180.1"/>
+  <circle class="tail-d" cx="269.2" cy="197" r="3.6"/>
+  <text class="clbl" x="284" y="191">copy</text>
+  <line class="cpl" x1="533" y1="189.6" x2="533" y2="165.6"/>
+  <polygon class="cpl-head" points="533,165.6 536.6,172.6 529.4,172.6"/>
+  <circle class="tail-f" cx="533" cy="189.6" r="3.6"/>
+  <text class="clbl" x="540" y="181.6">startRow</text>
+  <line class="cpl" x1="773" y1="122.5" x2="773" y2="146.5"/>
+  <polygon class="cpl-head" points="773,146.5 769.4,139.5 776.6,139.5"/>
+  <circle class="tail-d" cx="773" cy="122.5" r="3.6"/>
+  <text class="clbl" x="780" y="138.5">Column::isCondition</text>
+  <line class="cpl" x1="773" y1="189.6" x2="773" y2="165.6"/>
+  <polygon class="cpl-head" points="773,165.6 776.6,172.6 769.4,172.6"/>
+  <circle class="tail-d" cx="773" cy="189.6" r="3.6"/>
+  <text class="clbl" x="780" y="181.6">match</text>
+  <rect class="box" x="74" y="30" width="112" height="46"/>
+  <text class="lbl" x="130" y="57" text-anchor="middle">getColumns</text>
+  <rect class="box" x="254" y="30" width="112" height="46"/>
+  <text class="lbl" x="310" y="57" text-anchor="middle">getSteps</text>
+  <rect class="box" x="462" y="30" width="116" height="46"/>
+  <text class="lbl" x="520" y="57" text-anchor="middle">countPasses</text>
+  <rect class="box" x="702" y="30" width="116" height="46"/>
+  <text class="lbl" x="760" y="57" text-anchor="middle">hasConditions</text>
+  <rect class="box" x="164" y="230" width="112" height="46"/>
+  <line class="libbar" x1="171" y1="230" x2="171" y2="276"/>
+  <line class="libbar" x1="269" y1="230" x2="269" y2="276"/>
+  <text class="lbl" x="220" y="257" text-anchor="middle">List.copyOf</text>
+  <rect class="box" x="464" y="230" width="112" height="46"/>
+  <text class="lbl" x="520" y="257" text-anchor="middle">hasStartRow</text>
+  <rect class="box" x="695.5" y="230" width="129" height="46"/>
+  <line class="libbar" x1="702.5" y1="230" x2="702.5" y2="276"/>
+  <line class="libbar" x1="817.5" y1="230" x2="817.5" y2="276"/>
+  <text class="lbl" x="760" y="257" text-anchor="middle">Stream.anyMatch</text>
+</svg>
+  </div>
+  <figcaption><p><code>getColumns</code> and <code>getSteps</code> each return a copy of their list from
+  <code>List.copyOf</code>, which throws an <code>UnsupportedOperationException</code> on any change.
+  <code>countPasses</code> asks <code>hasStartRow</code> whether the table opens with a start row, and leaves that row
+  out of the count when it does. <code>hasConditions</code> passes <code>Column::isCondition</code> to
+  <code>Stream.anyMatch</code>, which reports whether any column shows the answers of a check. The seven other getters
+  each return a field, or in the case of <code>getReturnLine</code> pick between two fields, without calling a
+  module.</p></figcaption>
+</figure>
+</section>
+
+<section class="stack-lg" aria-labelledby="fan-h">
+  <div class="stack prose">
+    <h2 id="fan-h">Fan-in and fan-out</h2>
+    <p><em>Fan-in</em> is the number of modules that call a module. <em>Fan-out</em> is the number of modules it calls.
+    Yourdon and Constantine want high fan-in for small shared helpers, since it means one piece of code serves many
+    callers, and moderate fan-out, since a module that calls too many others is hard to follow. <code>fillCheck</code>
+    calls eight modules, one above the usual rule of thumb of about seven. <code>findColumn</code> and
+    <code>RowBuilder.put</code> each have a fan-in of 2, being shared by the constructor and <code>fillCheck</code>.</p>
+    <p>Twelve modules have a fan-in of 0, since nothing in <code>src/main</code> calls <code>Trace</code> yet. Seven of
+    them call nothing either, and they appear in this table and on no chart.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Module</th><th scope="col">In</th><th scope="col">Called by</th><th scope="col">Out</th><th scope="col">Calls</th></tr></thead>
+      <tbody>
+<tr><td><span class="mono">build</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">new Trace</span></td></tr>
+<tr><td><span class="mono">new Trace</span></td><td class="num">1</td><td><span class="mono">build</span></td><td class="num">4</td><td><span class="mono">new Call, findColumn, RowBuilder.put, fillCheck</span></td></tr>
+<tr><td><span class="mono">new Call</span></td><td class="num">1</td><td><span class="mono">new Trace</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr class="hi"><td><span class="mono">findColumn</span></td><td class="num">2</td><td><span class="mono">new Trace, fillCheck</span></td><td class="num">1</td><td><span class="mono">Map.computeIfAbsent</span></td></tr>
+<tr class="hi"><td><span class="mono">RowBuilder.put</span></td><td class="num">2</td><td><span class="mono">new Trace, fillCheck</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr class="hi"><td><span class="mono">fillCheck</span></td><td class="num">1</td><td><span class="mono">new Trace</span></td><td class="num">8</td><td><span class="mono">Probe.getChecked, Condition.getChecks, Condition.getText, findColumn, formatAnswer, RowBuilder.put, Probe.Checked.getCheck, Condition.evaluate</span></td></tr>
+<tr><td><span class="mono">formatAnswer</span></td><td class="num">1</td><td><span class="mono">fillCheck</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getColumns</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">List.copyOf</span></td></tr>
+<tr><td><span class="mono">getSteps</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">List.copyOf</span></td></tr>
+<tr><td><span class="mono">countPasses</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">hasStartRow</span></td></tr>
+<tr><td><span class="mono">hasStartRow</span></td><td class="num">1</td><td><span class="mono">countPasses</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">hasConditions</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">Stream.anyMatch</span></td></tr>
+<tr><td><span class="mono">getStartSteps</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getRowCount</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getResult</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getFailure</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getLastLine</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getReturnLine</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">isCutShort</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="stack-lg" aria-labelledby="notes-h">
+  <div class="stack prose">
+    <h2 id="notes-h">What the charts say about the design</h2>
+    <p>Structured Design judges a design by two measures. <em>Coupling</em> is how much one module depends on another,
+    and the couples on a chart are its visible part: fewer and simpler couples mean looser coupling. <em>Cohesion</em> is
+    how closely the statements inside one module serve a single job. A chart shows coupling directly, and these notes
+    read the charts that way, with one note on cohesion at the end.</p>
+  </div>
+  <div class="notes">
+<article class="note-item"><h3>fillCheck calls eight modules</h3><p>Chart 2 is the widest in the file. <code>fillCheck</code> looks up the check, adds the columns for the condition, places the answer of the check, keeps the answers so far in the <code>Call</code>, then places the answer of the whole condition. The last two jobs, lines 437 to 454, take the call, the condition, the index and the answer, and could become a module of their own. <code>Condition.evaluate</code> would then move beneath that module, and the call that <code>fillCheck</code> makes to it would describe the step in one name instead of eighteen lines.</p></article>
+<article class="note-item"><h3>keys and owners pass through fillCheck</h3><p>The constructor creates <code>keys</code> and <code>owners</code> as local variables and passes both to <code>fillCheck</code>, which uses them only to pass them on to <code>findColumn</code>. Meilir Page-Jones, writing on Structured Design, calls data that a module carries for another module tramp data. The lambda inside <code>findColumn</code> then adds to both, along with the <code>columns</code> field, a change that no couple on Chart 3 shows. Making <code>keys</code> and <code>owners</code> fields, as <code>columns</code> already is, would remove two couples from every call of <code>findColumn</code> and <code>fillCheck</code>.</p></article>
+<article class="note-item"><h3>put takes two flags, one through a field</h3><p><code>isParameter</code> travels down to <code>RowBuilder.put</code> and decides whether a value can join the start row. Yourdon and Constantine call a flag that tells the called module what to do control coupling, and rank it below data coupling. The second flag never appears on a chart. When a working method goes back to an earlier line, the constructor sets <code>builder.breakBeforeNext</code> directly, which Java allows because <code>RowBuilder</code> is an inner class of <code>Trace</code>. The next call of <code>put</code> then starts a new row, steered by a value that its caller wrote into it beforehand.</p></article>
+<article class="note-item"><h3>The constructor reads the events twice</h3><p>The first loop, lines 150 to 160, collects the working methods. The second loop turns each event into columns and steps, and the code after it qualifies the shared headings. Each part feeds its result to the next, which Yourdon and Constantine call sequential cohesion, the level just below a module that does one job. The first loop takes the events and produces the set of working methods. It could therefore become a module of its own, with one couple in and one out.</p></article>
+  </div>
+</section>
+
+<footer>
+  Drawn from <span class="mono">src/main/java/com/slinky/katas/internal/tracing/Trace.java</span>. Callers come
+  from <span class="mono">src/main</span> only; the unit tests are left out.
+</footer>
+
+</div>
+
+</body></html>

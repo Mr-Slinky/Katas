@@ -1,0 +1,455 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SourceCode.java Structure Charts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root {
+  /* Layout: one reading column for prose (about 68ch); chart sheets break out to the full 1200px frame */
+  --paper: #edf1ee;
+  --sheet: #fafcfa;
+  --grid: #e6ece8;
+  --ink: #16201c;
+  --muted: #5b6a64;
+  --rule: #c6d1cb;
+  --box: #ffffff;
+  --accent: #1d7a52;
+  --accent-ink: #145f3f;
+  --code-bg: #e3eae6;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1412; --sheet: #131b18; --grid: #19231f; --ink: #dce6e1; --muted: #93a59e;
+    --rule: #2a3732; --box: #18221e; --accent: #5ec796; --accent-ink: #84dcb0; --code-bg: #1b2622;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1412; --sheet: #131b18; --grid: #19231f; --ink: #dce6e1; --muted: #93a59e;
+  --rule: #2a3732; --box: #18221e; --accent: #5ec796; --accent-ink: #84dcb0; --code-bg: #1b2622;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.frame { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 64px; display: grid; gap: 56px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 4.6vw, 3.1rem); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 1.6rem; font-weight: 600; }
+h3 { font-size: 1.2rem; font-weight: 600; }
+p { margin: 0; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.05em 0.35em; border-radius: 3px; }
+pre {
+  margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5;
+  background: var(--code-bg); padding: 10px 12px; border-radius: 4px; overflow-x: auto; white-space: pre;
+}
+.eyebrow {
+  font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500;
+}
+.stack { display: grid; gap: 14px; }
+.stack-lg { display: grid; gap: 24px; }
+
+/* Masthead */
+.masthead { display: grid; gap: 16px; border-bottom: 2px solid var(--ink); padding-bottom: 28px; }
+.masthead .lede { font-size: 1.1rem; max-width: 64ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 28px; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+
+/* Key */
+.key { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 0 40px; }
+.key-item { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px 16px; padding-block: 18px; border-top: 1px solid var(--rule); align-items: start; }
+.key-item pre { grid-column: 1 / -1; }
+.key-item svg { width: 112px; height: auto; display: block; }
+.key-text { display: grid; gap: 8px; min-width: 0; }
+.key-text strong { font-family: var(--display); font-size: 1.02rem; font-weight: 600; }
+.key-text p { font-size: 0.94rem; }
+.rules { display: grid; gap: 10px; font-size: 0.94rem; color: var(--muted); max-width: 72ch; }
+
+/* Sheets */
+.sheet { margin: 0; background-color: var(--sheet); border: 1px solid var(--rule); }
+.sheet-body {
+  overflow-x: auto; padding-block: 20px; padding-inline: 12px;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.sheet-body svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.titleblock {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: stretch;
+  border-bottom: 1px solid var(--rule); font-family: var(--display);
+}
+.titleblock > div { padding: 10px 16px; display: grid; align-content: center; gap: 2px; min-width: 0; }
+.titleblock > div + div { border-left: 1px solid var(--rule); }
+.tb-label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.tb-num { font-size: 1.5rem; font-weight: 600; line-height: 1; }
+.tb-entry { font-family: var(--mono); font-size: 0.82rem; }
+.sheet figcaption { padding: 14px 16px 18px; border-top: 1px solid var(--rule); font-size: 0.95rem; }
+.sheet figcaption p { max-width: 80ch; }
+
+/* Structure chart drawing */
+.sc .box { fill: var(--box); stroke: var(--ink); stroke-width: 1.4; }
+.sc .box.ext { fill: var(--sheet); stroke: var(--muted); stroke-dasharray: 5 4; }
+.sc .libbar { stroke: var(--ink); stroke-width: 1.2; }
+.sc .rep { fill: var(--muted); }
+.sc .lbl { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+.sc .lbl.ext { fill: var(--muted); }
+.sc .sub { font-family: var(--body); font-size: 10px; fill: var(--muted); }
+.sc .note { font-family: var(--body); font-size: 11px; font-style: italic; fill: var(--muted); }
+.sc .call { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+.sc .head { fill: var(--ink); }
+.sc .diamond { fill: var(--box); stroke: var(--ink); stroke-width: 1.3; }
+.sc .loop { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+.sc .cpl { stroke: var(--accent); stroke-width: 1.4; fill: none; }
+.sc .cpl-head { fill: var(--accent); }
+.sc .tail-d { fill: var(--sheet); stroke: var(--accent); stroke-width: 1.4; }
+.sc .tail-f { fill: var(--accent); stroke: var(--accent); stroke-width: 1.4; }
+.sc .clbl {
+  font-family: var(--mono); font-size: 11px; fill: var(--accent-ink);
+  paint-order: stroke; stroke: var(--sheet); stroke-width: 3.5px; stroke-linejoin: round;
+}
+.key-item .sc .tail-d, .key-item .sc .clbl { stroke: var(--paper); }
+.key-item .sc .tail-d { stroke: var(--accent); fill: var(--paper); }
+
+/* Table */
+.table-wrap { overflow-x: auto; border-top: 2px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; padding-right: 20px; width: 4ch; }
+td .mono { font-size: 0.86rem; }
+tr.hi td.num { color: var(--accent-ink); font-weight: 500; }
+
+/* Notes */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px 40px; }
+.note-item { display: grid; gap: 8px; align-content: start; border-top: 1px solid var(--rule); padding-top: 14px; }
+.note-item p { font-size: 0.97rem; }
+
+footer { border-top: 1px solid var(--rule); padding-top: 16px; color: var(--muted); font-size: 0.85rem; }
+
+@media (max-width: 760px) {
+  .frame { padding-inline: 16px; gap: 44px; }
+  .sheet-body svg { max-width: none; width: calc(var(--w) * 0.74px); }
+  .titleblock { grid-template-columns: auto minmax(0, 1fr); }
+  .titleblock > div:last-child { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--rule); }
+}
+</style>
+
+<div class="frame">
+
+<header class="masthead">
+  <span class="eyebrow">Structured Design &middot; com.slinky.katas.internal.tracing</span>
+  <h1>SourceCode.java structure charts</h1>
+  <p class="lede">A structure chart, from Yourdon and Constantine&rsquo;s Structured Design, shows which modules call
+  which, and what passes between them on each call. It leaves out the order of statements inside a module.
+  <code>SourceCode.java</code> has 12 modules. No other class in <code>src/main</code> calls <code>SourceCode</code> yet,
+  so each of the two charts starts at an entry point of the class instead of at a caller.</p>
+  <div class="meta"><span>SourceCode.java v1.0.0</span><span>Last modified 2026-10-08</span><span>12 modules &middot; 2 charts</span></div>
+</header>
+
+<section class="stack-lg" aria-labelledby="key-h">
+  <div class="stack prose">
+    <h2 id="key-h">Reading the charts</h2>
+    <p>In Structured Design a <em>module</em> is a named piece of code that a caller can invoke and get control back
+    from. In Java that is a method or a constructor. Each symbol below comes with the line in <code>SourceCode.java</code>
+    that produces it.</p>
+  </div>
+  <div class="key">
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A plain box"><rect class="box" x="6" y="15" width="100" height="30"/><text class="lbl" x="56" y="34" text-anchor="middle" style="font-size:11px">readLines</text></svg><div class="key-text"><strong>Module</strong><p>One method or constructor in SourceCode.java. The chart shows what it does for its caller, not the statements inside it.</p></div><pre><code>private static List&lt;String&gt; readLines(Path file) throws IOException {</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="An arrow from an upper box to a lower box"><rect class="box" x="30" y="2" width="52" height="14"/><line class="call" x1="56" y1="16" x2="56" y2="42"/><polygon class="head" points="56,44 51.5,35 60.5,35"/><rect class="box" x="30" y="44" width="52" height="14"/></svg><div class="key-text"><strong>Call</strong><p>An arrow from a module down to a module it calls. The caller sits above.</p></div><pre><code>return find(type, Path.of("").toAbsolutePath());   // in find(Class)</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="Two small arrows with hollow circles at their tails beside the call arrow, one pointing down and one up"><line class="call" x1="24" y1="2" x2="24" y2="56"/><polygon class="head" points="24,58 19.5,49 28.5,49"/><line class="cpl" x1="40" y1="8" x2="40" y2="23"/><polygon class="cpl-head" points="40,29 36.4,22 43.6,22"/><circle class="tail-d" cx="40" cy="8" r="3.6"/><text class="clbl" x="50" y="22">file</text><line class="cpl" x1="40" y1="54" x2="40" y2="39"/><polygon class="cpl-head" points="40,33 36.4,40 43.6,40"/><circle class="tail-d" cx="40" cy="54" r="3.6"/><text class="clbl" x="50" y="48">lines</text></svg><div class="key-text"><strong>Data couple</strong><p>A value passed on a call. The hollow circle marks the tail, and the arrow points the way the value travels: down into the called module, or up as its result.</p></div><pre><code>return Files.readAllLines(file);   // in readLines
+// file goes down, the lines come back up</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A small arrow with a filled circle at its tail beside the call arrow"><line class="call" x1="30" y1="2" x2="30" y2="56"/><polygon class="head" points="30,58 25.5,49 34.5,49"/><line class="cpl" x1="46" y1="44" x2="46" y2="22"/><polygon class="cpl-head" points="46,16 42.4,23 49.6,23"/><circle class="tail-f" cx="46" cy="44" r="3.6"/><text class="clbl" x="56" y="34">CONTINUE</text></svg><div class="key-text"><strong>Flag</strong><p>A value whose job is to steer what a module does next. The filled circle marks the tail. A thrown exception is drawn as a flag too, since it sends the caller to its <code>catch</code> block.</p></div><pre><code>return skip ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;   // in preVisitDirectory</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A small diamond where the call arrow leaves the caller"><rect class="box" x="20" y="0" width="72" height="12"/><line class="call" x1="56" y1="12" x2="56" y2="56"/><polygon class="head" points="56,58 51.5,49 60.5,49"/><polygon class="diamond" points="56,13 62,20 56,27 50,20"/></svg><div class="key-text"><strong>Conditional call</strong><p>The diamond means the call happens only when a test passes.</p></div><pre><code>if (nearest.isPresent()) {
+    return new SourceCode(fileName, readLines(nearest.get()));
+}</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A curved arrow drawn across two call arrows below the caller"><rect class="box" x="20" y="0" width="72" height="12"/><line class="call" x1="46" y1="12" x2="28" y2="56"/><polygon class="head" points="27.2,58 25.4,48.8 33.6,52"/><line class="call" x1="66" y1="12" x2="84" y2="56"/><polygon class="head" points="84.8,58 78.4,52 86.6,48.8"/><path class="loop" d="M30,26 Q56,46 80,26"/><polygon class="head" points="82.5,24 77.3,32 74.2,25.6"/></svg><div class="key-text"><strong>Repeated calls</strong><p>The curved arrow crosses every call that runs once per pass of a loop. Here the loop is inside <code>Files.walkFileTree</code>, which calls the visitor once for each folder and file it reaches.</p></div><pre><code>Files.walkFileTree(root, EnumSet.noneOf(FileVisitOption.class), MAX_DEPTH, visitor);</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a second line inside each side"><rect class="box" x="6" y="15" width="100" height="30"/><line class="libbar" x1="13" y1="15" x2="13" y2="45"/><line class="libbar" x1="99" y1="15" x2="99" y2="45"/><text class="lbl" x="56" y="34" text-anchor="middle" style="font-size:11px">Stream.min</text></svg><div class="key-text"><strong>Library module</strong><p>A method from the JDK that SourceCode.java calls but does not define.</p></div><pre><code>var nearest = matches.stream()
+                     .min(Comparator.comparingInt(Path::getNameCount)
+                                    .thenComparing(Comparator.naturalOrder()));</code></pre></div>
+<div class="key-item"><svg class="sc" viewBox="0 0 112 60" role="img" aria-label="A box with a dashed outline"><rect class="box ext" x="6" y="15" width="100" height="30"/><text class="lbl ext" x="56" y="34" text-anchor="middle" style="font-size:11px">parseLine</text></svg><div class="key-text"><strong>Module in another file</strong><p>A dashed box is a method outside SourceCode.java, drawn so you can see where a chart leaves the class.</p></div><pre><code>return Condition.parseLine(readLine(number));   // in findConditionsOn</code></pre></div>
+  </div>
+  <div class="rules">
+    <p>Couples take the name of the variable in the code, so you can find each one in <code>SourceCode.java</code>.
+    Where the code passes a value straight on without storing it in a variable, the couple takes a short name for it,
+    such as <code>source</code> for the <code>SourceCode</code> that <code>find(Class)</code> returns, or
+    <code>bytes</code> for the array that <code>Files.readAllBytes</code> returns.</p>
+    <p><code>preVisitDirectory</code>, <code>visitFile</code> and <code>visitFileFailed</code> are methods of the
+    anonymous <code>SimpleFileVisitor</code> that <code>find(Class, Path)</code> builds. <code>Files.walkFileTree</code>
+    is the module that calls them, so they sit beneath it. Calls to <code>String</code>, <code>Path</code>,
+    <code>List</code>, <code>Set</code>, <code>Optional</code> and <code>Comparator</code> methods are left out, along
+    with <code>Class.getName</code>.</p>
+  </div>
+</section>
+
+<section class="stack-lg" aria-label="Structure charts">
+
+<figure class="sheet" id="chart-1">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">1</span></div>
+    <div><span class="tb-label">Title</span><h3>Finding and reading the source file</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">find(Class)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="-11.5 12 1224.9 682" width="1224.9" height="682" role="img" aria-label="Structure chart 1: find(Class) calls find(Class, Path), which calls Files.walkFileTree, Stream.min, readLines and the SourceCode constructor; Files.walkFileTree calls preVisitDirectory, visitFile and visitFileFailed; readLines calls Files.readAllLines and Files.readAllBytes." style="--w:1224.9">
+  <line class="call" x1="700" y1="76" x2="700" y2="228"/>
+  <polygon class="head" points="700,230 695.5,221 704.5,221"/>
+  <line class="call" x1="655" y1="276" x2="331.8" y2="429.1"/>
+  <polygon class="head" points="330,430 336.2,422.1 340.1,430.2"/>
+  <line class="call" x1="685" y1="276" x2="561.3" y2="428.4"/>
+  <polygon class="head" points="560,430 562.2,420.2 569.2,425.8"/>
+  <line class="call" x1="715" y1="276" x2="908.4" y2="428.8"/>
+  <polygon class="head" points="910,430 900.1,428 905.7,420.9"/>
+  <polygon class="diamond" points="720.5,273.3 726.5,280.3 720.5,287.3 714.5,280.3"/>
+  <line class="call" x1="745" y1="276" x2="1128.1" y2="429.3"/>
+  <polygon class="head" points="1130,430 1120,430.8 1123.3,422.5"/>
+  <line class="call" x1="300" y1="476" x2="131.5" y2="628.7"/>
+  <polygon class="head" points="130,630 133.6,620.6 139.7,627.3"/>
+  <line class="call" x1="330" y1="476" x2="330" y2="628"/>
+  <polygon class="head" points="330,630 325.5,621 334.5,621"/>
+  <line class="call" x1="360" y1="476" x2="518.6" y2="628.6"/>
+  <polygon class="head" points="520,630 510.4,627 516.6,620.5"/>
+  <polygon class="diamond" points="365,473.9 371,480.9 365,487.9 359,480.9"/>
+  <path class="loop" d="M275.2,493 Q329.4,528 383.7,493"/>
+  <polygon class="head" points="383.7,493 378.9,500.4 375,494.3"/>
+  <line class="call" x1="890" y1="476" x2="791.1" y2="628.3"/>
+  <polygon class="head" points="790,630 791.1,620 798.7,624.9"/>
+  <line class="call" x1="930" y1="476" x2="1028.9" y2="628.3"/>
+  <polygon class="head" points="1030,630 1021.3,624.9 1028.9,620"/>
+  <polygon class="diamond" points="933.8,474.9 939.8,481.9 933.8,488.9 927.8,481.9"/>
+  <line class="cpl" x1="713" y1="122.5" x2="713" y2="146.5"/>
+  <polygon class="cpl-head" points="713,146.5 709.4,139.5 716.6,139.5"/>
+  <circle class="tail-d" cx="713" cy="122.5" r="3.6"/>
+  <text class="clbl" x="720" y="138.5">type, root</text>
+  <line class="cpl" x1="713" y1="189.6" x2="713" y2="165.6"/>
+  <polygon class="cpl-head" points="713,165.6 716.6,172.6 709.4,172.6"/>
+  <circle class="tail-d" cx="713" cy="189.6" r="3.6"/>
+  <text class="clbl" x="720" y="181.6">source</text>
+  <line class="cpl" x1="546.5" y1="313" x2="524.8" y2="323.3"/>
+  <polygon class="cpl-head" points="524.8,323.3 529.6,317 532.7,323.5"/>
+  <circle class="tail-d" cx="546.5" cy="313" r="3.6"/>
+  <text class="clbl" x="517.8" y="322.2" text-anchor="end">root, MAX_DEPTH, visitor</text>
+  <line class="cpl" x1="427.3" y1="369.5" x2="449" y2="359.2"/>
+  <polygon class="cpl-head" points="449,359.2 444.2,365.5 441.2,359"/>
+  <circle class="tail-f" cx="427.3" cy="369.5" r="3.6"/>
+  <text class="clbl" x="420.3" y="368.4" text-anchor="end">IOException</text>
+  <line class="cpl" x1="612.5" y1="385.9" x2="627.7" y2="367.3"/>
+  <polygon class="cpl-head" points="627.7,367.3 626,375 620.4,370.4"/>
+  <circle class="tail-d" cx="612.5" cy="385.9" r="3.6"/>
+  <text class="clbl" x="634.7" y="380.6">nearest</text>
+  <line class="cpl" x1="781.9" y1="312.3" x2="800.7" y2="327.1"/>
+  <polygon class="cpl-head" points="800.7,327.1 793,325.6 797.5,320"/>
+  <circle class="tail-d" cx="781.9" cy="312.3" r="3.6"/>
+  <text class="clbl" x="807.7" y="323.7">file</text>
+  <line class="cpl" x1="853.4" y1="368.7" x2="834.5" y2="353.8"/>
+  <polygon class="cpl-head" points="834.5,353.8 842.3,355.4 837.8,361"/>
+  <circle class="tail-d" cx="853.4" cy="368.7" r="3.6"/>
+  <text class="clbl" x="860.4" y="365.3">lines</text>
+  <line class="cpl" x1="837.3" y1="389.1" x2="818.4" y2="374.2"/>
+  <polygon class="cpl-head" points="818.4,374.2 826.2,375.8 821.7,381.4"/>
+  <circle class="tail-f" cx="837.3" cy="389.1" r="3.6"/>
+  <text class="clbl" x="811.4" y="385.7" text-anchor="end">IOException</text>
+  <line class="cpl" x1="911.9" y1="328.8" x2="934.2" y2="337.7"/>
+  <polygon class="cpl-head" points="934.2,337.7 926.4,338.4 929.1,331.7"/>
+  <circle class="tail-d" cx="911.9" cy="328.8" r="3.6"/>
+  <text class="clbl" x="941.2" y="337.2">fileName, lines</text>
+  <line class="cpl" x1="240.7" y1="512.2" x2="222.9" y2="528.3"/>
+  <polygon class="cpl-head" points="222.9,528.3 225.6,521 230.5,526.3"/>
+  <circle class="tail-d" cx="240.7" cy="512.2" r="3.6"/>
+  <text class="clbl" x="215.9" y="524.3" text-anchor="end">dir</text>
+  <line class="cpl" x1="171.9" y1="574.5" x2="189.7" y2="558.4"/>
+  <polygon class="cpl-head" points="189.7,558.4 186.9,565.8 182.1,560.4"/>
+  <circle class="tail-f" cx="171.9" cy="574.5" r="3.6"/>
+  <text class="clbl" x="164.9" y="570.5" text-anchor="end">CONTINUE or SKIP_SUBTREE</text>
+  <line class="cpl" x1="343" y1="522.5" x2="343" y2="546.5"/>
+  <polygon class="cpl-head" points="343,546.5 339.4,539.5 346.6,539.5"/>
+  <circle class="tail-d" cx="343" cy="522.5" r="3.6"/>
+  <text class="clbl" x="350" y="538.5">file</text>
+  <line class="cpl" x1="343" y1="589.6" x2="343" y2="565.6"/>
+  <polygon class="cpl-head" points="343,565.6 346.6,572.6 339.4,572.6"/>
+  <circle class="tail-f" cx="343" cy="589.6" r="3.6"/>
+  <text class="clbl" x="350" y="581.6">CONTINUE</text>
+  <line class="cpl" x1="416.4" y1="512.2" x2="433.7" y2="528.9"/>
+  <polygon class="cpl-head" points="433.7,528.9 426.1,526.6 431.1,521.4"/>
+  <circle class="tail-d" cx="416.4" cy="512.2" r="3.6"/>
+  <text class="clbl" x="440.7" y="524.5">file, ex</text>
+  <line class="cpl" x1="481.7" y1="575.1" x2="464.4" y2="558.4"/>
+  <polygon class="cpl-head" points="464.4,558.4 471.9,560.7 466.9,565.9"/>
+  <circle class="tail-f" cx="481.7" cy="575.1" r="3.6"/>
+  <text class="clbl" x="488.7" y="570.7">CONTINUE</text>
+  <line class="cpl" x1="857.6" y1="502" x2="844.6" y2="522.1"/>
+  <polygon class="cpl-head" points="844.6,522.1 845.4,514.3 851.4,518.2"/>
+  <circle class="tail-d" cx="857.6" cy="502" r="3.6"/>
+  <text class="clbl" x="837.6" y="516" text-anchor="end">file</text>
+  <line class="cpl" x1="822.6" y1="556" x2="835.6" y2="535.9"/>
+  <polygon class="cpl-head" points="835.6,535.9 834.8,543.7 828.8,539.8"/>
+  <circle class="tail-d" cx="822.6" cy="556" r="3.6"/>
+  <text class="clbl" x="815.6" y="549.9" text-anchor="end">lines</text>
+  <line class="cpl" x1="800.6" y1="589.9" x2="813.6" y2="569.7"/>
+  <polygon class="cpl-head" points="813.6,569.7 812.8,577.6 806.8,573.6"/>
+  <circle class="tail-f" cx="800.6" cy="589.9" r="3.6"/>
+  <text class="clbl" x="793.6" y="583.8" text-anchor="end">CharacterCodingException</text>
+  <line class="cpl" x1="969.4" y1="512.8" x2="982.4" y2="532.9"/>
+  <polygon class="cpl-head" points="982.4,532.9 975.6,529 981.6,525.1"/>
+  <circle class="tail-d" cx="969.4" cy="512.8" r="3.6"/>
+  <text class="clbl" x="989.4" y="526.8">file</text>
+  <line class="cpl" x1="1009.4" y1="574.5" x2="996.4" y2="554.3"/>
+  <polygon class="cpl-head" points="996.4,554.3 1003.2,558.2 997.2,562.2"/>
+  <circle class="tail-d" cx="1009.4" cy="574.5" r="3.6"/>
+  <text class="clbl" x="1016.4" y="568.4">bytes</text>
+  <rect class="box" x="644" y="30" width="112" height="46"/>
+  <text class="lbl" x="700" y="57" text-anchor="middle">find(Class)</text>
+  <rect class="box" x="623.8" y="230" width="152.4" height="46"/>
+  <text class="lbl" x="700" y="257" text-anchor="middle">find(Class, Path)</text>
+  <rect class="box" x="243.2" y="430" width="173.6" height="46"/>
+  <line class="libbar" x1="250.2" y1="430" x2="250.2" y2="476"/>
+  <line class="libbar" x1="409.8" y1="430" x2="409.8" y2="476"/>
+  <text class="lbl" x="330" y="457" text-anchor="middle">Files.walkFileTree</text>
+  <rect class="box" x="497" y="430" width="126" height="46"/>
+  <line class="libbar" x1="504" y1="430" x2="504" y2="476"/>
+  <line class="libbar" x1="616" y1="430" x2="616" y2="476"/>
+  <text class="lbl" x="560" y="457" text-anchor="middle">Stream.min</text>
+  <rect class="box" x="854" y="430" width="112" height="46"/>
+  <text class="lbl" x="910" y="457" text-anchor="middle">readLines</text>
+  <rect class="box" x="1064.6" y="430" width="130.8" height="46"/>
+  <text class="lbl" x="1130" y="450" text-anchor="middle">new SourceCode</text>
+  <text class="sub" x="1130" y="465" text-anchor="middle">constructor</text>
+  <rect class="box" x="53.8" y="630" width="152.4" height="46"/>
+  <text class="lbl" x="130" y="657" text-anchor="middle">preVisitDirectory</text>
+  <rect class="box" x="274" y="630" width="112" height="46"/>
+  <text class="lbl" x="330" y="657" text-anchor="middle">visitFile</text>
+  <rect class="box" x="451" y="630" width="138" height="46"/>
+  <text class="lbl" x="520" y="657" text-anchor="middle">visitFileFailed</text>
+  <rect class="box" x="703.2" y="630" width="173.6" height="46"/>
+  <line class="libbar" x1="710.2" y1="630" x2="710.2" y2="676"/>
+  <line class="libbar" x1="869.8" y1="630" x2="869.8" y2="676"/>
+  <text class="lbl" x="790" y="657" text-anchor="middle">Files.readAllLines</text>
+  <rect class="box" x="943.2" y="630" width="173.6" height="46"/>
+  <line class="libbar" x1="950.2" y1="630" x2="950.2" y2="676"/>
+  <line class="libbar" x1="1109.8" y1="630" x2="1109.8" y2="676"/>
+  <text class="lbl" x="1030" y="657" text-anchor="middle">Files.readAllBytes</text>
+</svg>
+  </div>
+  <figcaption><p><code>find(Class)</code> passes the class and the absolute path of the working directory to
+  <code>find(Class, Path)</code>. That works out the path the file must end with, then has
+  <code>Files.walkFileTree</code> visit every folder and file up to 12 levels down. The walk calls
+  <code>preVisitDirectory</code> for each folder, which skips hidden folders and build folders, and
+  <code>visitFile</code> for each file, which stores every match. <code>visitFileFailed</code> runs only for an entry
+  the walk cannot open. <code>Stream.min</code> then picks the match nearest the starting folder, and
+  <code>readLines</code> reads it as UTF-8, or as Windows-1252 when UTF-8 rejects a byte. Last,
+  <code>find(Class, Path)</code> builds the <code>SourceCode</code> from the lines it read, or from an empty list when
+  nothing matched or the reading failed.</p></figcaption>
+</figure>
+
+<figure class="sheet" id="chart-2">
+  <div class="titleblock">
+    <div><span class="tb-label">Chart</span><span class="tb-num">2</span></div>
+    <div><span class="tb-label">Title</span><h3>Reading the conditions on a line</h3></div>
+    <div><span class="tb-label">Entry point</span><span class="tb-entry">findConditionsOn(int)</span></div>
+  </div>
+  <div class="sheet-body">
+<svg class="sc" viewBox="36 12 448 304" width="448" height="304" role="img" aria-label="Structure chart 2: findConditionsOn calls readLine, then Condition.parseLine." style="--w:448">
+  <line class="call" x1="240" y1="76" x2="111.3" y2="228.5"/>
+  <polygon class="head" points="110,230 112.4,220.2 119.2,226"/>
+  <line class="call" x1="280" y1="76" x2="408.7" y2="228.5"/>
+  <polygon class="head" points="410,230 400.8,226 407.6,220.2"/>
+  <line class="cpl" x1="192.3" y1="112.3" x2="176.8" y2="130.7"/>
+  <polygon class="cpl-head" points="176.8,130.7 178.6,123 184.1,127.7"/>
+  <circle class="tail-d" cx="192.3" cy="112.3" r="3.6"/>
+  <text class="clbl" x="169.8" y="125.5" text-anchor="end">number</text>
+  <line class="cpl" x1="137.8" y1="176.9" x2="153.3" y2="158.5"/>
+  <polygon class="cpl-head" points="153.3,158.5 151.5,166.2 146,161.6"/>
+  <circle class="tail-d" cx="137.8" cy="176.9" r="3.6"/>
+  <text class="clbl" x="130.8" y="171.7" text-anchor="end">line</text>
+  <line class="cpl" x1="327.7" y1="112.3" x2="343.2" y2="130.7"/>
+  <polygon class="cpl-head" points="343.2,130.7 335.9,127.7 341.4,123"/>
+  <circle class="tail-d" cx="327.7" cy="112.3" r="3.6"/>
+  <text class="clbl" x="350.2" y="125.5">line</text>
+  <line class="cpl" x1="382.2" y1="176.9" x2="366.7" y2="158.5"/>
+  <polygon class="cpl-head" points="366.7,158.5 374,161.6 368.5,166.2"/>
+  <circle class="tail-d" cx="382.2" cy="176.9" r="3.6"/>
+  <text class="clbl" x="389.2" y="171.7">conditions</text>
+  <rect class="box" x="187.4" y="30" width="145.2" height="46"/>
+  <text class="lbl" x="260" y="57" text-anchor="middle">findConditionsOn</text>
+  <rect class="box" x="54" y="230" width="112" height="46"/>
+  <text class="lbl" x="110" y="257" text-anchor="middle">readLine</text>
+  <rect class="box ext" x="354" y="230" width="112" height="46"/>
+  <text class="lbl ext" x="410" y="250" text-anchor="middle">parseLine</text>
+  <text class="sub" x="410" y="265" text-anchor="middle">Condition</text>
+  <text class="note" x="410" y="293" text-anchor="middle">continues in Condition.html</text>
+</svg>
+  </div>
+  <figcaption><p><code>findConditionsOn</code> passes the line number to <code>readLine</code>, which returns the text
+  of that line, or an empty string for a number outside the file. It passes that text to
+  <code>Condition.parseLine</code>, which returns the conditions on the line from left to right. Chart 1 of
+  <a href="Condition.html#chart-1">the Condition charts</a> continues from the <code>parseLine</code> box.</p></figcaption>
+</figure>
+</section>
+
+<section class="stack-lg" aria-labelledby="fan-h">
+  <div class="stack prose">
+    <h2 id="fan-h">Fan-in and fan-out</h2>
+    <p><em>Fan-in</em> is the number of modules that call a module. <em>Fan-out</em> is the number of modules it calls.
+    Yourdon and Constantine want high fan-in for small shared helpers, since it means one piece of code serves many
+    callers, and moderate fan-out, since a module that calls too many others is hard to follow.
+    <code>find(Class, Path)</code> calls four modules, the most in the file and well within the usual rule of thumb of
+    about seven. No module has a fan-in above 1, because <code>SourceCode.java</code> has no helper that two modules
+    share.</p>
+    <p>Five modules have a fan-in of 0, since nothing in <code>src/main</code> calls <code>SourceCode</code> yet.
+    Three of them, <code>hasLines</code>, <code>getLineCount</code> and <code>getFileName</code>, call nothing either,
+    so they appear in this table and on no chart.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Module</th><th scope="col">In</th><th scope="col">Called by</th><th scope="col">Out</th><th scope="col">Calls</th></tr></thead>
+      <tbody>
+<tr><td><span class="mono">find(Class)</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">1</td><td><span class="mono">find(Class, Path)</span></td></tr>
+<tr class="hi"><td><span class="mono">find(Class, Path)</span></td><td class="num">1</td><td><span class="mono">find(Class)</span></td><td class="num">4</td><td><span class="mono">Files.walkFileTree, Stream.min, readLines, new SourceCode</span></td></tr>
+<tr><td><span class="mono">preVisitDirectory</span></td><td class="num">1</td><td><span class="mono">Files.walkFileTree</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">visitFile</span></td><td class="num">1</td><td><span class="mono">Files.walkFileTree</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">visitFileFailed</span></td><td class="num">1</td><td><span class="mono">Files.walkFileTree</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">readLines</span></td><td class="num">1</td><td><span class="mono">find(Class, Path)</span></td><td class="num">2</td><td><span class="mono">Files.readAllLines, Files.readAllBytes</span></td></tr>
+<tr><td><span class="mono">new SourceCode</span></td><td class="num">1</td><td><span class="mono">find(Class, Path)</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">findConditionsOn</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">2</td><td><span class="mono">readLine, Condition.parseLine</span></td></tr>
+<tr><td><span class="mono">readLine</span></td><td class="num">1</td><td><span class="mono">findConditionsOn</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">hasLines</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getLineCount</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+<tr><td><span class="mono">getFileName</span></td><td class="num">0</td><td><span class="mono">none in src/main</span></td><td class="num">0</td><td><span class="mono">none</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="stack-lg" aria-labelledby="notes-h">
+  <div class="stack prose">
+    <h2 id="notes-h">What the charts say about the design</h2>
+    <p>Structured Design judges a design by two measures. <em>Coupling</em> is how much one module depends on another,
+    and the couples on a chart are its visible part: fewer and simpler couples mean looser coupling. <em>Cohesion</em> is
+    how closely the statements inside one module serve a single job. A chart shows coupling directly, so these notes
+    read the charts that way, with one note on cohesion at the end.</p>
+  </div>
+  <div class="notes">
+<article class="note-item"><h3>The visitor tells the library what to do</h3><p><code>preVisitDirectory</code> returns <code>SKIP_SUBTREE</code> or <code>CONTINUE</code>, and <code>Files.walkFileTree</code> obeys it. That is a flag travelling upward to steer the caller, which Meilir Page-Jones, writing on Structured Design, calls an inversion of authority: the module below gives the orders. In a callback API such as <code>FileVisitor</code> that reversal is the whole point, since the library hands each decision to the code that knows the answer. <code>visitFile</code> and <code>visitFileFailed</code> always return <code>CONTINUE</code>, so their flags never change what the walk does.</p></article>
+<article class="note-item"><h3>The visitor shares three variables without couples</h3><p>The visitor reads <code>root</code> and <code>wanted</code> from <code>find(Class, Path)</code>, and adds each match to <code>matches</code>. Java lets an anonymous class use a local variable of the method around it when that variable is never reassigned, and <code>matches</code> qualifies because the code changes the list&rsquo;s contents rather than the variable. None of this sharing appears on Chart 1, which is the risk Yourdon and Constantine see in data that bypasses the couples. Here the visitor lives only inside <code>find(Class, Path)</code> and only for one walk, so the hidden sharing stays within a single method.</p></article>
+<article class="note-item"><h3>find turns a failure into data</h3><p><code>Files.walkFileTree</code> and <code>readLines</code> can each throw an <code>IOException</code>, which reaches <code>find(Class, Path)</code> as a flag. <code>find(Class, Path)</code> catches it and returns a <code>SourceCode</code> with no lines, so the flag stops there. A caller asks <code>hasLines</code> instead of writing a <code>catch</code> block. <code>readLines</code> treats a <code>CharacterCodingException</code> the same way, answering it with a second read as Windows-1252 rather than passing it on.</p></article>
+<article class="note-item"><h3>find(Class, Path) does four jobs in a row</h3><p>It works out the wanted path from the class name, walks the folders, picks the nearest match, then reads it. Each job feeds its result to the next, which Yourdon and Constantine call sequential cohesion, the level just below a module that does one job. The first job, lines 101 to 106, takes a <code>Class</code> and produces a path, so it could become a module of its own with one couple in and one out. <code>fileName</code> is the last part of <code>wanted</code>, meaning that module could return <code>wanted</code> alone, with <code>wanted.getFileName()</code> giving the name back.</p></article>
+  </div>
+</section>
+
+<footer>
+  Drawn from <span class="mono">src/main/java/com/slinky/katas/internal/tracing/SourceCode.java</span>. Callers come
+  from <span class="mono">src/main</span> only; the unit tests are left out.
+</footer>
+
+</div>
+
+</body></html>

@@ -100,3 +100,17 @@ A student runs these commands from the root of the repository:
 | Build and install  | `mvn clean install -DskipTests` |
 | Run every test     | `mvn test`                      |
 | Run one test class | `mvn test -Dtest=<ClassName>`   |
+
+## Authorship
+
+Each commit in the history of Katas records who wrote the code in it. Some commits contain work that
+the maintainer and Claude, an AI assistant, did together. The author of such a commit is whoever did
+most of the work. The other takes a `Co-Authored-By` line at the end of the commit message, which
+marks a supporting role:
+
+| Author         | Co-author      | Meaning                                                                                                                                                          |
+|----------------|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| The maintainer | Claude         | The maintainer wrote the code. Claude reviewed it or influenced it, for example through an audit, static analysis, a test run, or by teaching an API it uses. |
+| Claude         | The maintainer | Claude wrote the code. The maintainer reviewed it and strongly influenced it.                                                                                    |
+
+`git log --author=Claude` lists the commits that Claude did most of the work on.

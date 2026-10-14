@@ -3,11 +3,12 @@ package com.slinky.katas.internal.tracing;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 /**
- * The condition of one {@code if}, {@code while} or {@code for} statement, split into the checks that Java runs
- * to decide it. A check is one yes-or-no test, such as {@code x % i == 0}. The operators {@code &&}, {@code ||}
+ * The condition of one {@code if}, {@code while} or {@code for} statement, or the comparison in one assignment or
+ * {@code return}, split into the checks that Java runs to decide it. A check is one yes-or-no test, such as {@code x % i == 0}. The operators {@code &&}, {@code ||}
  * and {@code !} join the checks into the whole condition.
  *
  * <p>
@@ -68,7 +69,7 @@ import java.util.regex.Pattern;
  * @author Kheagen Haskins
  * @version 1.0.0
  *         <p>
- *         Last modified: 2026-10-07
+ *         Last modified: 2026-10-12
  * @since 1.0.0
  */
 public final class Condition {
@@ -78,16 +79,27 @@ public final class Condition {
     // ========================================================================================== \\
     // Matches "if", "while" or "for" as a whole word, followed by any spaces and an opening bracket
     private static final Pattern KEYWORD = Pattern.compile("\\b(if|while|for)\\s*\\(");
+    // The keyword whose expression parseLine reads as a condition when it compares values
+    private static final String  RETURN  = "return";
+    // The symbols that turn an "=" after them into an operator other than a plain assignment, such as "<=" or "+="
+    private static final String  SYMBOLS_BEFORE_EQUALS = "=!<>+-*/%&|^";
 
     /**
-     * Returns the condition of each {@code if}, {@code while} and {@code for} statement on one line of source
-     * code, from left to right.
+     * Returns every condition on one line of source code, from left to right. A condition comes from one of
+     * three places:
+     *
+     * <ul>
+     *     <li>the brackets of an {@code if}, {@code while} or {@code for} statement</li>
+     *     <li>the expression after the {@code =} of an assignment, such as {@code found = x > 0;}</li>
+     *     <li>the expression after a {@code return}, such as {@code return a > b;}</li>
+     * </ul>
      *
      * <p>
      * The method ignores everything after a {@code //} comment, and every keyword inside a string literal. A
      * {@code for} statement contributes the part between its two semicolons, meaning an enhanced {@code for}
-     * and a {@code for (;;)} contribute no condition. The returned list leaves out a condition whose closing
-     * bracket falls on a later line.
+     * and a {@code for (;;)} contribute no condition. An assignment or a {@code return} contributes its
+     * expression only when the expression compares two values, or joins checks with {@code &&} or
+     * {@code ||}. The returned list leaves out a condition that continues on a later line.
      *
      * <pre>
      * "if (a) b(); if (c) d();"             ->  ["a", "c"]
@@ -97,7 +109,17 @@ public final class Condition {
      * "if (x > 0) { // if (y > 0)"          ->  ["x > 0"]
      * "if (a) log(\"while (b)\");"          ->  ["a"]
      * "if (a > b ||"                        ->  []   (the condition continues on the next line)
+     * "boolean found = x > 0 || y > 5;"     ->  ["x > 0 || y > 5"]
+     * "if (a > b) return a > c;"            ->  ["a > b", "a > c"]
+     * "int remainder = a % b;"              ->  []   (the expression compares nothing)
      * </pre>
+     *
+     * <h4 id="parse-line-limitations">Known limitations</h4>
+     * The method finds no condition in a comparison passed to a method, as in {@code check(a > b)}, or in the
+     * body of a lambda. Java still compiles each of those comparisons to a jump, meaning the line has more jumps
+     * than checks. The method also reads a {@code <} or {@code >} that belongs to a generic type or a shift as a
+     * comparison, as in {@code list = new ArrayList<>()}. In both cases the checks on the line differ in number
+     * from the jumps that Java compiled, and a tracer that pairs them in order cannot pair that line.
      *
      * @param line one line of Java source code
      *
@@ -105,7 +127,7 @@ public final class Condition {
      *         none
      */
     static List<Condition> parseLine(String line) {
-        var conditions = new ArrayList<Condition>();
+        var conditions = new TreeMap<Integer, Condition>();   // Orders the conditions by where they start on the line
         var code       = stripComment(line);
         // Blanks out the inside of each literal, which hides any keyword or bracket written in a string
         var scanned    = maskLiterals(code);
@@ -123,10 +145,18 @@ public final class Condition {
                 inside = parts.size() == 3 ? parts.get(1) : "";
             }
             if (!inside.isBlank()) {
-                conditions.add(new Condition(inside.strip()));
+                conditions.put(open, new Condition(inside.strip()));
             }
         }
-        return conditions;
+
+        // Adds the expression after each assignment and each return outside brackets, when it compares values
+        for (var start : findExpressionStarts(scanned)) {
+            var expression = readExpression(code, scanned, start);
+            if (isComparison(expression)) {
+                conditions.put(start, new Condition(expression));
+            }
+        }
+        return new ArrayList<>(conditions.values());
     }
 
     // ========================================================================================== \\
@@ -288,7 +318,8 @@ public final class Condition {
     /**
      * Builds a condition from its source text and splits that text into checks.
      *
-     * @param text the condition as written between the brackets of its statement, such as
+     * @param text the condition as written between the brackets of its statement, or after its {@code =} or
+     *             {@code return}, such as
      *             {@code a > b && !found}
      */
     Condition(String text) {
@@ -528,6 +559,147 @@ public final class Condition {
             }
         }
         return masked.toString();
+    }
+
+    /**
+     * Returns the index at which the expression of each assignment and each {@code return} begins. The method
+     * finds every {@code =} and every {@code return} outside brackets, and passes over {@code ==}, {@code !=},
+     * {@code <=}, {@code >=} and each compound assignment such as {@code +=}.
+     *
+     * <pre>{@code
+     * "found = x > 0;"                 ->  [7]
+     * "return a > b;"                  ->  [6]
+     * "if (x == y) z = 1;"             ->  [15]
+     * "for (int i = 0; i < n; i++) {"  ->  []   (the = is inside the brackets of the for)
+     * "total += i;"                    ->  []
+     * }</pre>
+     *
+     * @param scanned one line of source code, with the inside of each literal replaced by spaces
+     *
+     * @return the index just after each {@code =} and each {@code return}, from left to right
+     */
+    private static List<Integer> findExpressionStarts(String scanned) {
+        var starts = new ArrayList<Integer>();
+        var depth  = 0;   // the number of brackets open at index i
+        for (var i = 0; i < scanned.length(); i++) {
+            var c = scanned.charAt(i);
+            if (c == '(') {
+                depth++;
+            } else if (c == ')') {
+                depth--;
+            } else if (depth == 0 && isAssignment(scanned, i)) {
+                starts.add(i + 1);
+            } else if (depth == 0 && isReturn(scanned, i)) {
+                starts.add(i + RETURN.length());
+            }
+        }
+        return starts;
+    }
+
+    /**
+     * Returns whether the character at {@code index} is the {@code =} of a plain assignment.
+     *
+     * <pre>{@code
+     * "x = y", 2    ->  true
+     * "x == y", 2   ->  false
+     * "x <= y", 3   ->  false
+     * "x += y", 3   ->  false
+     * }</pre>
+     *
+     * @param scanned one line of source code, with the inside of each literal replaced by spaces
+     * @param index   the index of the character to test
+     *
+     * @return {@code true} when the character is an {@code =} that has no {@code =} after it and no operator
+     *         symbol before it
+     */
+    private static boolean isAssignment(String scanned, int index) {
+        if (scanned.charAt(index) != '=') return false;
+
+        var next     = index + 1 < scanned.length() ? scanned.charAt(index + 1) : ' ';
+        var previous = index > 0 ? scanned.charAt(index - 1) : ' ';
+        return next != '=' && SYMBOLS_BEFORE_EQUALS.indexOf(previous) < 0;
+    }
+
+    /**
+     * Returns whether the keyword {@code return} starts at {@code index}, as a whole word.
+     *
+     * <pre>{@code
+     * "return a;", 0     ->  true
+     * "returned = 1;", 0 ->  false
+     * }</pre>
+     *
+     * @param scanned one line of source code, with the inside of each literal replaced by spaces
+     * @param index   the index to test
+     *
+     * @return {@code true} when {@code return} starts at {@code index} and no letter, digit or underscore
+     *         touches it on either side
+     */
+    private static boolean isReturn(String scanned, int index) {
+        if (!scanned.startsWith(RETURN, index)) return false;
+
+        var end    = index + RETURN.length();
+        var before = index > 0 ? scanned.charAt(index - 1) : ' ';
+        var after  = end < scanned.length() ? scanned.charAt(end) : ' ';
+        return !Character.isJavaIdentifierPart(before) && !Character.isJavaIdentifierPart(after);
+    }
+
+    /**
+     * Returns the expression that starts at {@code start}, up to the first {@code ;} or {@code ,} outside
+     * brackets. The {@code ,} ends the expression of one variable in a declaration such as
+     * {@code int a = 1, b = 2;}.
+     *
+     * <pre>{@code
+     * "found = x > 0;", 7          ->  "x > 0"
+     * "int a = 1, b = c > d;", 7   ->  "1"
+     * "ok = f(a, b);", 4           ->  "f(a, b)"
+     * "ok = a > b &&", 4           ->  ""   (the expression continues on the next line)
+     * }</pre>
+     *
+     * @param code    one line of source code
+     * @param scanned the same line, with the inside of each literal replaced by spaces
+     * @param start   the index at which the expression begins
+     *
+     * @return the expression without the spaces around it, or an empty string when the line ends before the
+     *         expression does
+     */
+    private static String readExpression(String code, String scanned, int start) {
+        var depth = 0;   // the number of brackets open at index i
+        for (var i = start; i < scanned.length(); i++) {
+            var c = scanned.charAt(i);
+            if (c == '(') {
+                depth++;
+            } else if (c == ')') {
+                depth--;
+            } else if (depth == 0 && (c == ';' || c == ',')) {
+                return code.substring(start, i).strip();
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Returns whether an expression is a condition: two or more checks joined by {@code &&} or {@code ||}, or
+     * one check that compares two values.
+     *
+     * <pre>{@code
+     * "x > 0 && y < 5"   ->  true
+     * "!(a > b)"         ->  true
+     * "a % b"            ->  false
+     * "found"            ->  false
+     * ""                 ->  false
+     * }</pre>
+     *
+     * @param expression the expression of an assignment or a {@code return}
+     *
+     * @return {@code true} when the expression contains a comparison or joins checks with {@code &&} or
+     *         {@code ||}
+     */
+    private static boolean isComparison(String expression) {
+        if (expression.isBlank()) return false;
+
+        var checks  = new Condition(expression).getChecks();
+        var firstOp = checks.getFirst().operator();
+        return checks.size() > 1 || firstOp != Operator.IS_TRUE;
     }
 
     /**

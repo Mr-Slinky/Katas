@@ -78,6 +78,10 @@ class StepMarkerTest {
 
         boolean isPositive(int x);
 
+        boolean areBothPositive(int x, int y);
+
+        boolean isGreater(int a, int b);
+
         int countUp(int times);
 
     }
@@ -233,7 +237,11 @@ class StepMarkerTest {
                          Arguments.of(name("first check of an && condition", calls -> calls.isBetween(0, 1, 10)),
                                       List.of("low < x -> false")),
                          Arguments.of(name("more jumps than checks on a line", calls -> calls.isPositive(3)),
-                                      List.of()));
+                                      List.of()),
+                         Arguments.of(name("&& condition in an assignment", calls -> calls.areBothPositive(3, -1)),
+                                      List.of("x > 0 -> true", "y > 0 -> false")),
+                         Arguments.of(name("comparison in a return", calls -> calls.isGreater(5, 2)),
+                                      List.of("a > b -> true")));
     }
 
     @Test

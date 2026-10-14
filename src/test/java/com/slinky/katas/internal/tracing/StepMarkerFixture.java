@@ -72,6 +72,17 @@ public final class StepMarkerFixture implements StepMarkerTest.Calls {
     }
 
     @Override
+    public boolean areBothPositive(int x, int y) {
+        boolean both = x > 0 && y > 0;
+        return both;
+    }
+
+    @Override
+    public boolean isGreater(int a, int b) {
+        return a > b;
+    }
+
+    @Override
     public int countUp(int times) {
         int count = 0;
         for (int i = 0; i < times; i++) {
